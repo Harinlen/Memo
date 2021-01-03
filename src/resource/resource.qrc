@@ -1,0 +1,27 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/readonly.ico</file>
+        <file>icons/saved.ico</file>
+        <file>icons/unsaved.ico</file>
+        <file>icons/closeAll.png</file>
+        <file>icons/closeFile.png</file>
+        <file>icons/newFile.png</file>
+        <file>icons/openFile.png</file>
+        <file>icons/saveAll.png</file>
+        <file>icons/saveFile.png</file>
+        <file>icons/print.png</file>
+        <file>icons/copy.png</file>
+        <file>icons/cut.png</file>
+        <file>icons/paste.ico</file>
+        <file>icons/redo.png</file>
+        <file>icons/undo.png</file>
+        <file>bookmark.png</file>
+        <file>icons/find.png</file>
+        <file>icons/replace.png</file>
+        <file>icons/zoomIn.png</file>
+        <file>icons/zoomOut.png</file>
+        <file>icons/indentGuide.png</file>
+        <file>icons/invisibleChar.png</file>
+        <file>icons/wrap.png</file>
+    </qresource>
+</RCC>
