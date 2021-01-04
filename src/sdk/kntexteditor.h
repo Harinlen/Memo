@@ -160,6 +160,19 @@ public:
      */
     QString selectedText() const;
 
+    /*!
+     * \brief Reimplemented from QPlainTextEdit::find().
+     */
+    bool find(const QString &exp,
+              QTextDocument::FindFlags options = QTextDocument::FindFlags());
+
+    /*!
+     * \brief Reimplemented from QPlainTextEdit::find().
+     */
+    bool find(const QRegularExpression &exp,
+              QTextDocument::FindFlags options = QTextDocument::FindFlags());
+
+
 signals:
     /*!
      * \brief When the title of the document is changed, this signal is emitted.

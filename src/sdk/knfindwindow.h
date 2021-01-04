@@ -97,7 +97,10 @@ private slots:
     void retranslate();
     void onTransSet();
     void onTabChanged(int tabIndex);
+    void onFindNext();
     void onCount();
+    void onReplace();
+    void onReplaceAll();
 
 private:
     enum Buttons
@@ -133,15 +136,20 @@ private:
         OptionWrapAround,
         MatchOptionCount
     };
-
     void searchNext(bool revserse);
     inline QComboBox *generateBox();
     struct SearchCache
     {
         bool useReg;
+        bool multiLine;
         QString keywords;
+        QString keywordLineFirst, keywordLineLast;
+        QStringList keywordLineMid;
         QRegularExpression regExp;
+        QRegularExpression regExpFirst, regExpLast;
+        QVector<QRegularExpression> regExpLines;
     };
+    bool cursorMatches(const QTextCursor &tc, Qt::CaseSensitivity cs);
     SearchCache createSearchCache();
     QTextCursor performSearch(KNTextEditor *editor, const QTextCursor &tc,
                               bool backward = false);
@@ -150,8 +158,9 @@ private:
     QTextCursor cacheSearch(KNTextEditor *editor, const QTextCursor &tc,
                             const SearchCache &cache,
                             QTextDocument::FindFlags flags);
+    QTextDocument::FindFlags getOneWaySearchFlags();
     QTextDocument::FindFlags getSearchFlags(bool backward);
-    QRegularExpression getRegExp();
+    QRegularExpression getRegExp(const QString &exp);
     inline void setWidget(QWidget *widget, int row, int column,
                           int rowSpan, int columnSpan,
                           Qt::Alignment align = Qt::Alignment());

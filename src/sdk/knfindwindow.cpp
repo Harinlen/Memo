@@ -20,6 +20,7 @@
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QSlider>
+#include <QTextBlock>
 
 #include "knconfiguremanager.h"
 #include "knconfigure.h"
@@ -183,20 +184,11 @@ KNFindWindow::KNFindWindow(QWidget *parent) :
     //Link the translator.
     knUi->addTranslate(this, &KNFindWindow::retranslate);
     //Link buttons.
-    connect(m_buttons[FindNext], &QPushButton::clicked, [=]
-    {
-        //Check whether the reverse is checked.
-        if(m_matchOption[OptionBackward]->isChecked())
-        {
-            findPrevious();
-        }
-        else
-        {
-            findNext();
-        }
-    });
+    connect(m_buttons[FindNext], &QPushButton::clicked, this, &KNFindWindow::onFindNext);
     connect(m_buttons[Count], &QPushButton::clicked, this, &KNFindWindow::onCount);
     connect(m_buttons[Close], &QPushButton::clicked, this, &KNFindWindow::close);
+    connect(m_buttons[Replace], &QPushButton::clicked, this, &KNFindWindow::onReplace);
+    connect(m_buttons[ReplaceAll], &QPushButton::clicked, this, &KNFindWindow::onReplaceAll);
     //Set the default option.
     //!FIXME: Load from config.
     m_optionNormal->setChecked(true);
@@ -444,6 +436,19 @@ void KNFindWindow::onTabChanged(int tabIndex)
     }
 }
 
+void KNFindWindow::onFindNext()
+{
+    //Check whether the reverse is checked.
+    if(m_matchOption[OptionBackward]->isChecked())
+    {
+        findPrevious();
+    }
+    else
+    {
+        findNext();
+    }
+}
+
 void KNFindWindow::onCount()
 {
     //Convert the find next.
@@ -463,7 +468,7 @@ void KNFindWindow::onCount()
     {
         //Then search from top to bottom.
         tc.setPosition(0);
-        flags = getSearchFlags(false);
+        flags = getOneWaySearchFlags();
     }
     else
     {
@@ -482,6 +487,78 @@ void KNFindWindow::onCount()
     }
     //Update the count result.
     m_message->setText(infoText(tr("Count: %1 match(es).").arg(
+                                    QString::number(count))));
+}
+
+void KNFindWindow::onReplace()
+{
+    //Convert the find next.
+    auto manager = static_cast<KNFileManager *>(parentWidget());
+    //Fetch the current editor.
+    KNTextEditor *editor = manager->currentEditor();
+    if(!editor)
+    {
+        return;
+    }
+    //Clear the message box.
+    m_message->clear();
+    //Check whether the current text cursor matches the find result.
+    if(!cursorMatches(editor->textCursor(),
+                      m_matchOption[OptionMatchCase]->isChecked() ?
+                      Qt::CaseSensitive : Qt::CaseInsensitive))
+    {
+        //Need to find next.
+        onFindNext();
+        return;
+    }
+    //Replace the target data and find the next item.
+    auto tc = editor->textCursor();
+    tc.beginEditBlock();
+    tc.insertText(m_replaceText->currentText());
+    tc.endEditBlock();
+    //Find the next item.
+    onFindNext();
+}
+
+void KNFindWindow::onReplaceAll()
+{
+    //Convert the find next.
+    auto manager = static_cast<KNFileManager *>(parentWidget());
+    //Fetch the current editor.
+    KNTextEditor *editor = manager->currentEditor();
+    if(!editor)
+    {
+        return;
+    }
+    //Perform the search until the end, check the result.
+    QTextCursor tc = editor->textCursor(), rawPos = editor->textCursor();
+    rawPos.beginEditBlock();
+    rawPos.setKeepPositionOnInsert(true);
+    //Create the counter.
+    quint64 count = 0;
+    //Move the cursor to the start.
+    tc.movePosition(QTextCursor::Start);
+    //Loop and try to find next.
+    auto searchCache = createSearchCache();
+    QTextDocument::FindFlags flags = getOneWaySearchFlags();
+    const QString &replaceText = m_replaceText->currentText();
+    tc = cacheSearch(editor, tc, searchCache, flags);
+    while(!tc.isNull())
+    {
+        //Replace the text.
+        tc.removeSelectedText();
+        tc.insertText(replaceText);
+        //Increase the count.
+        ++count;
+        //Preform the next search.
+        tc = cacheSearch(editor, tc, searchCache, flags);
+    }
+    rawPos.endEditBlock();
+    //Move back to the position.
+    editor->setTextCursor(rawPos);
+    //Update the count result.
+    m_message->setText(infoText(
+                           tr("Replace All: %1 occurrence(s) were replaced.").arg(
                                     QString::number(count))));
 }
 
@@ -578,6 +655,31 @@ QComboBox *KNFindWindow::generateBox()
     return textBox;
 }
 
+bool KNFindWindow::cursorMatches(const QTextCursor &tc, Qt::CaseSensitivity cs)
+{
+    //Check whether the text cursor has the selection.
+    if(!tc.hasSelection())
+    {
+        return false;
+    }
+    //Extract the selection text.
+    QString selectionText = tc.selectedText();
+    selectionText.replace(QChar(QChar::ParagraphSeparator), '\n');
+    //Construct the search cache.
+    auto searchCache = createSearchCache();
+    //Check whether the selection matches the search cache.
+    if(searchCache.useReg)
+    {
+        //Check whether the regular expression matches the result.
+        auto match = searchCache.regExp.match(selectionText);
+        return match.isValid() &&
+                match.capturedStart() == 0 &&
+                match.capturedEnd() == selectionText.length();
+    }
+    //Directly compare the string.
+    return selectionText.compare(searchCache.keywords, cs) == 0;
+}
+
 KNFindWindow::SearchCache KNFindWindow::createSearchCache()
 {
     SearchCache cache;
@@ -585,6 +687,7 @@ KNFindWindow::SearchCache KNFindWindow::createSearchCache()
     {
         cache.keywords = m_findText->currentText();
         cache.useReg = false;
+        cache.multiLine = false;
     }
     else if(m_optionExtend->isChecked())
     {
@@ -595,12 +698,51 @@ KNFindWindow::SearchCache KNFindWindow::createSearchCache()
         cache.keywords.replace("\\t", "\t");
         cache.keywords.replace("\\0", "\0");
         cache.useReg = false;
+        //Check multilines.
+        if(cache.keywords.contains('\n'))
+        {
+            cache.multiLine = true;
+            //Split the keylines.
+            auto keylines = cache.keywords.split('\n');
+            //Extract the keylines.
+            cache.keywordLineFirst = keylines.first();
+            cache.keywordLineLast = keylines.last();
+            cache.keywordLineMid = keylines.mid(1, keylines.size() - 2);
+        }
+        else
+        {
+            cache.multiLine = false;
+        }
     }
     else if(m_optionReg->isChecked())
     {
-        //Construct the flags.
-        cache.regExp = getRegExp();
+        //Enable regular expression.
         cache.useReg = true;
+        //Construct the entire regular expression.
+        cache.regExp = getRegExp(m_findText->currentText());
+        //Check the multiple line supports.
+        if(m_findText->currentText().contains("\\n"))
+        {
+            //Enable multi-lines.
+            cache.multiLine = true;
+            //Create expressions.
+            QStringList exps = m_findText->currentText().split("\\n");
+            cache.regExpLines.reserve(exps.size());
+            //Construct the expression.
+            cache.regExpFirst = getRegExp(exps.first());
+            cache.regExpLast = getRegExp(exps.last());
+            cache.regExpLines.clear();
+            for(auto exp : exps.mid(1, exps.size() - 2))
+            {
+                //Append the regular expression.
+                cache.regExpLines.append(getRegExp(exp));
+            }
+        }
+        else
+        {
+            //Disable the multiple lines.
+            cache.multiLine = false;
+        }
     }
     return cache;
 }
@@ -620,6 +762,78 @@ QTextCursor KNFindWindow::performSearch(KNTextEditor *editor,
     return cacheSearch(editor, tc, createSearchCache(), flags);
 }
 
+QTextBlock matchLines(QTextBlock block, const QStringList &lines,
+                      Qt::CaseSensitivity cs)
+{
+    int lineId = 0;
+    while(lineId < lines.size())
+    {
+        //Check block validation and text matched.
+        if(!block.isValid() || !block.text().compare(lines.at(lineId), cs))
+        {
+            return QTextBlock();
+        }
+        //Switch to next block and line.
+        block = block.next();
+        ++lineId;
+    }
+    return block;
+}
+
+int regMatchFirst(const QString &source, const QRegularExpression &exp)
+{
+    //Match the exp from the end of the block.
+    QRegularExpressionMatch match;
+    int result = source.indexOf(exp, 0, &match);
+    if(result == -1)
+    {
+        return -1;
+    }
+    //Check the result.
+    return (match.capturedStart() == 0) ?
+              match.capturedEnd() : -1;
+}
+
+int regMatchLast(const QString &source, const QRegularExpression &exp)
+{
+    //Match the exp from the end of the block.
+    QRegularExpressionMatch match;
+    int result = source.lastIndexOf(exp, -1, &match);
+    if(result == -1)
+    {
+        return -1;
+    }
+    //Check the result.
+    return (match.capturedEnd() == source.length()) ?
+              match.capturedStart() : -1;
+}
+
+QTextBlock regMatchLines(QTextBlock block, const QVector<QRegularExpression> &exps)
+{
+    int lineId = 0;
+    while(lineId < exps.size())
+    {
+        //Check block validation and exp matched.
+        if(!block.isValid())
+        {
+            return QTextBlock();
+        }
+        //Use the regular expression to match the string.
+        const QString &blockText = block.text();
+        auto match = exps.at(lineId).match(blockText);
+        //Must match the entire string.
+        if(!match.isValid() || match.capturedStart() != 0 ||
+                match.capturedEnd() != blockText.length())
+        {
+            return QTextBlock();
+        }
+        //Keep moving.
+        block = block.next();
+        ++lineId;
+    }
+    return block;
+}
+
 QTextCursor KNFindWindow::cacheSearch(KNTextEditor *editor,
                                       const QTextCursor &tc,
                                       const KNFindWindow::SearchCache &cache,
@@ -629,19 +843,81 @@ QTextCursor KNFindWindow::cacheSearch(KNTextEditor *editor,
     //Check the cache regular expression settings.
     if(cache.useReg)
     {
+        if(cache.multiLine)
+        {
+            //Search for the first line.
+            QTextBlock block = tc.block();
+            while(block.isValid())
+            {
+                int firstMatch = regMatchLast(block.text(), cache.regExpFirst);
+                if(firstMatch != -1)
+                {
+                    //Perform the mid-level search.
+                    QTextBlock lastBlock = regMatchLines(block.next(), cache.regExpLines);
+                    if(lastBlock.isValid())
+                    {
+                        // Match the last line.
+                        int lastMatch = regMatchFirst(lastBlock.text(), cache.regExpLast);
+                        if(lastMatch != -1)
+                        {
+                            //Now construct the position.
+                            auto resultCursor = tc;
+                            resultCursor.setPosition(block.position() + firstMatch);
+                            resultCursor.setPosition(lastBlock.position() + lastMatch,
+                                                     QTextCursor::KeepAnchor);
+                            return resultCursor;
+                        }
+                    }
+                }
+                block = block.next();
+            }
+            return QTextCursor();
+        }
         return doc->find(cache.regExp, tc, flags);
     }
     //Perform normal search.
+    if(cache.multiLine)
+    {
+        auto cs = (flags & QTextDocument::FindCaseSensitively) ?
+                    Qt::CaseSensitive : Qt::CaseInsensitive;
+        //Search for the first line.
+        QTextBlock block = tc.block();
+        while(block.isValid())
+        {
+            QString text = block.text();
+            //Search at the end of the block.
+            if(text.endsWith(cache.keywordLineFirst, cs))
+            {
+                //Matches mid-level lines.
+                QTextBlock lastBlock = matchLines(block.next(), cache.keywordLineMid, cs);
+                //Check the mid block result and matches the last block.
+                if(lastBlock.isValid() &&
+                        lastBlock.text().startsWith(cache.keywordLineLast, cs))
+                {
+                    //Now construct the position.
+                    auto resultCursor = tc;
+                    resultCursor.setPosition(block.position() +
+                                             text.length() -
+                                             cache.keywordLineFirst.length());
+                    //Set the selection.
+                    resultCursor.movePosition(QTextCursor::NextCharacter,
+                                              QTextCursor::KeepAnchor,
+                                              cache.keywords.length());
+                    return resultCursor;
+                }
+            }
+            block = block.next();
+        }
+        //If goes here, then no need to find.
+        return QTextCursor();
+    }
+    //Do normal single line search.
     return doc->find(cache.keywords, tc, flags);
 }
 
-QTextDocument::FindFlags KNFindWindow::getSearchFlags(bool backward)
+QTextDocument::FindFlags KNFindWindow::getOneWaySearchFlags()
 {
     auto flags = QTextDocument::FindFlags();
-    if(backward)
-    {
-        flags |= QTextDocument::FindBackward;
-    }
     if(m_matchOption[OptionMatchCase]->isChecked())
     {
         flags |= QTextDocument::FindCaseSensitively;
@@ -653,7 +929,17 @@ QTextDocument::FindFlags KNFindWindow::getSearchFlags(bool backward)
     return flags;
 }
 
-QRegularExpression KNFindWindow::getRegExp()
+QTextDocument::FindFlags KNFindWindow::getSearchFlags(bool backward)
+{
+    auto flags = getOneWaySearchFlags();
+    if(backward)
+    {
+        flags |= QTextDocument::FindBackward;
+    }
+    return flags;
+}
+
+QRegularExpression KNFindWindow::getRegExp(const QString &exp)
 {
     auto regFlags = QRegularExpression::PatternOptions();
     //Append default options.
@@ -666,7 +952,7 @@ QRegularExpression KNFindWindow::getRegExp()
     {
         regFlags |= QRegularExpression::DotMatchesEverythingOption;
     }
-    return QRegularExpression(m_findText->currentText(), regFlags);
+    return QRegularExpression(exp, regFlags);
 }
 
 void KNFindWindow::setWidget(QWidget *widget, int row, int column,
