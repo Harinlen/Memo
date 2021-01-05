@@ -165,6 +165,7 @@ public slots:
     void closeAllRight();
     void closeAllSaved();
     void setCurrentTab(int tabId);
+    void setFocusOnEditor();
 
 private slots:
     void retranslate();
@@ -182,6 +183,8 @@ private slots:
     void showCurrentSummary();
     void onReloadUseCodec(const QByteArray &codecName);
     void onSetCodec(const QByteArray &codecName);
+    void onQuickSearch(const QString &keywords, Qt::CaseSensitivity cs,
+                       int position);
 
 private:
     void removeEditorAndTab(int index);

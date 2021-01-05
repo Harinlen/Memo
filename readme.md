@@ -17,7 +17,7 @@ Tested platform:
 ## TODO List
 
 - [ ] Complete the search function
-- [ ] Quick search
+- [x] Quick search
 - [ ] Grammar modeling backend
 - [ ] Syntax highlight
 - [ ] Code folding

@@ -150,6 +150,24 @@ void KNGlobal::setZoomScalar(const qreal &value)
     emit editorFontChange();
 }
 
+QTextCharFormat KNGlobal::quickSearchFormat() const
+{
+    return m_quickSearchFormat;
+}
+
+bool KNGlobal::isSearchResultShown() const
+{
+    return m_configure->data("ShowQuickSearchResult", false).toBool();
+}
+
+void KNGlobal::setSearchResultShown(bool shown)
+{
+    //Save the result.
+    m_configure->setData("ShowQuickSearchResult", shown);
+    //Emit the signal.
+    emit editorResultDisplayChange(isSearchResultShown());
+}
+
 QTimer *KNGlobal::cursorTimer() const
 {
     return m_cursorFlash;
@@ -212,6 +230,8 @@ void KNGlobal::startUp()
     m_presetFont = m_configure->data("DefaultFont",
                                      QFontDatabase::systemFont(QFontDatabase::FixedFont)).value<QFont>();
     m_scaledFont = m_presetFont;
+    //Update the quick search format.
+    m_quickSearchFormat.setBackground(QColor(155, 255, 155));
     // Initialize the main window.
     m_mainWindow->initalize();
     // Set the theme based on the settings.

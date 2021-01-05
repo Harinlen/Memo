@@ -13,6 +13,7 @@
 #ifndef KNGLOBAL_H
 #define KNGLOBAL_H
 
+#include <QTextCharFormat>
 #include <QPixmap>
 #include <QFont>
 #include <QObject>
@@ -174,6 +175,24 @@ public:
      */
     void zoomReset();
 
+    /*!
+     * \brief Get the quick search char format.
+     * \return The format of the search result.
+     */
+    QTextCharFormat quickSearchFormat() const;
+
+    /*!
+     * \brief Check whether the quick search display result is shown.
+     * \return If the result should be marked, return true.
+     */
+    bool isSearchResultShown() const;
+
+    /*!
+     * \brief Set whether the quick search result should be display.
+     * \param shown To mark the result, set this value to true.
+     */
+    void setSearchResultShown(bool shown);
+
 signals:
     /*!
      * \brief When the display font is change, this signal is emitted.
@@ -192,6 +211,12 @@ signals:
      */
     void editorWrapModeChange(bool wrap);
 
+    /*!
+     * \brief When the editor search result is changed, this signal is emitted.
+     * \param result If the result display is true, set this to true.
+     */
+    void editorResultDisplayChange(bool result);
+
 private:
     explicit KNGlobal(KNMainWindow *parent = nullptr);
     //Disable the copy of the instance.
@@ -205,6 +230,7 @@ private:
     QString m_dirPath[DirCount];
     QString m_searchUrl[5];
     QPixmap m_bookmark;
+    QTextCharFormat m_quickSearchFormat;
     KNMainWindow *m_mainWindow;
     KNConfigure *m_configure;
     QTimer *m_cursorFlash;

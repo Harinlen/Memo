@@ -85,6 +85,8 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     m_menuItems[Find]->setShortcut(QKeySequence::Find);
     m_menuItems[FindNext]->setShortcut(QKeySequence::FindNext);
     m_menuItems[FindPrev]->setShortcut(QKeySequence::FindPrevious);
+    m_menuItems[FindVolatileNext]->setShortcut(QKeySequence(KNG::CTRL | KNG::ALT | Qt::Key_F3));
+    m_menuItems[FindVolatilePrev]->setShortcut(QKeySequence(KNG::CTRL | KNG::SHIFT | KNG::ALT | Qt::Key_F3));
     m_menuItems[Replace]->setShortcut(QKeySequence::Replace);
     m_menuItems[SelectAndFindNext]->setShortcut(QKeySequence(KNG::CTRL | Qt::Key_F3));
     m_menuItems[SelectAndFindPrev]->setShortcut(QKeySequence(KNG::CTRL | KNG::SHIFT | Qt::Key_F3));
@@ -97,6 +99,8 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     connect(m_menuItems[FindInFiles], &QAction::triggered, this, &KNSearchMenu::onFindInFiles);
     connect(m_menuItems[FindNext], &QAction::triggered, m_searchWindow, &KNFindWindow::findNext);
     connect(m_menuItems[FindPrev], &QAction::triggered, m_searchWindow, &KNFindWindow::findPrevious);
+    connect(m_menuItems[FindVolatileNext], &QAction::triggered, m_searchBar, &KNSearchBar::findNext);
+    connect(m_menuItems[FindVolatilePrev], &QAction::triggered, m_searchBar, &KNSearchBar::findPrevious);
     connect(m_menuItems[Replace], &QAction::triggered, this, &KNSearchMenu::onReplace);
     connect(m_menuItems[IncrementSearch], &QAction::triggered, m_searchBar, &KNSearchBar::showAndSetFocus);
     connect(m_menuItems[GoTo], &QAction::triggered, this, &KNSearchMenu::onGoto);

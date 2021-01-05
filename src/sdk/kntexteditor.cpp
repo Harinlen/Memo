@@ -28,6 +28,7 @@
 #include <QFileInfo>
 #include <QDir>
 #include <QTextCodec>
+#include <QtConcurrent/QtConcurrent>
 
 #include "kntextblockdata.h"
 #include "knglobal.h"
@@ -42,6 +43,9 @@ KNTextEditor::KNTextEditor(const QString &titleName,
                            const QString &filePath, const QString &codec,
                            QWidget *parent) :
     QPlainTextEdit(parent),
+    m_quickSearchSense(Qt::CaseInsensitive),
+    m_quickSearchCode(0),
+    m_showResults(false),
     m_filePath(QString()),
     m_codecName(codec.toLatin1()),
     m_panel(new KNTextEditorPanel(this)),
@@ -62,6 +66,7 @@ KNTextEditor::KNTextEditor(const QString &titleName,
     setTabStopDistance(knGlobal->tabSpacing() *
                        fontMetrics().averageCharWidth());
     onEditorFontChanged();
+    onResultDisplayChange(knGlobal->isSearchResultShown());
     //Reset the text layout.
 //    document()->setDocumentLayout(new KNDocumentLayout(document()));
 
@@ -74,6 +79,8 @@ KNTextEditor::KNTextEditor(const QString &titleName,
                     this, &KNTextEditor::setSymbolDisplayMode));
     addLink(connect(knGlobal, &KNGlobal::editorWrapModeChange,
                     this, &KNTextEditor::onWrapModeChange));
+    addLink(connect(knGlobal, &KNGlobal::editorResultDisplayChange,
+                    this, &KNTextEditor::onResultDisplayChange));
     //Link the signals.
     connect(this, &KNTextEditor::updateRequest,
             this, &KNTextEditor::updatePanelArea);
@@ -538,6 +545,14 @@ void KNTextEditor::paintEvent(QPaintEvent *event)
     }
 }
 
+void KNTextEditor::scrollContentsBy(int dx, int dy)
+{
+    //Directly update the scroll result.
+    QPlainTextEdit::scrollContentsBy(dx, dy);
+    //Update the current selection.
+    updateExtraSelections();
+}
+
 void KNTextEditor::onBlockCountChanged(int newBlockCount)
 {
     //Update the block count.
@@ -619,12 +634,237 @@ void KNTextEditor::onWrapModeChange(bool wrap)
                            QTextOption::NoWrap);
 }
 
+void KNTextEditor::onResultDisplayChange(bool showResult)
+{
+    //Update the result display switch.
+    m_showResults = showResult;
+    //Update the selection.
+    updateExtraSelections();
+}
+
+void KNTextEditor::quickSearchUi(const QTextBlock &block)
+{
+    //Do quick search for the display part.
+    QScopedPointer<KNTextSearcher> searcher;
+    searcher.reset(new KNTextSearcher);
+    searcher->search(block, m_quickSearchKeyword,
+                     height()/fontMetrics().lineSpacing()+2,
+                     false, true, m_quickSearchCode, m_quickSearchSense);
+    //Update the selection.
+    updateExtraSelections();
+}
+
+void KNTextEditor::quickSearchCheck(const QTextBlock &block)
+{
+    //Check the block.
+    auto data = blockData(block);
+    if(Q_UNLIKELY(data == nullptr))
+    {
+        return;
+    }
+    //Check whether the block has been searched.
+    data->lockQuickSearch();
+    if(!KNTextSearcher::isSearchLatest(data, m_quickSearchCode))
+    {
+        data->unlockQuickSearch();
+        //Start update the entire UI.
+        quickSearchUi(block);
+        //Lock the data.
+        data->lockQuickSearch();
+    }
+    //Unlock the data.
+    data->unlockQuickSearch();
+}
+
 void KNTextEditor::setCodecName(const QString &codecName)
 {
     //Save the codec name.
     m_codecName = codecName.toLatin1();
     //Emit the signal.
     emit fileCodecChange(codecName);
+}
+
+void KNTextEditor::quickSearch(const QString &keywords, Qt::CaseSensitivity cs,
+                               int position)
+{
+    //Save the keywords and settings.
+    m_quickSearchKeyword = keywords;
+    m_quickSearchSense = cs;
+    //Increase the search code.
+    ++m_quickSearchCode;
+    //Update the length.
+    const int len = keywords.length();
+    //Clear the previous threads.
+    if(!m_quickSearchNext.isNull())
+    {
+        m_quickSearchNext->quit();
+        m_futureNext.waitForFinished();
+    }
+    if(!m_quickSearchPrev.isNull())
+    {
+        m_quickSearchPrev->quit();
+        m_futurePrev.waitForFinished();
+    }
+    //Do the search through the entire editor.
+    QTextCursor tc = textCursor();
+    tc.clearSelection();
+    tc.setPosition(position);
+    setTextCursor(tc);
+    //Check the keywords.
+    if(len == 0)
+    {
+        QTextBlock block = document()->firstBlock();
+        //Clear all the data result.
+        while(block.isValid())
+        {
+            //Does search for the string.
+            auto data = blockData(block);
+            //Clear the search the result.
+            data->results.clear();
+            //Loop to the end of the block.
+            block = block.next();
+        }
+        //Update the extra search.
+        updateExtraSelections();
+    }
+    else
+    {
+        //Do instant search.
+        quickSearchUi(firstVisibleBlock());
+        //Search the visible part.
+        m_quickSearchNext.reset(new KNTextSearcher);
+        m_quickSearchPrev.reset(new KNTextSearcher);
+        //Start searching.
+        m_futureNext = QtConcurrent::run(
+                    &KNTextSearcher::search, m_quickSearchNext.data(),
+                    firstVisibleBlock(), m_quickSearchKeyword, -1, true, true,
+                    m_quickSearchCode, m_quickSearchSense);
+        m_futurePrev = QtConcurrent::run(
+                    &KNTextSearcher::search, m_quickSearchPrev.data(),
+                    firstVisibleBlock(), m_quickSearchKeyword, -1, true, false,
+                    m_quickSearchCode, m_quickSearchSense);
+        //Move to next.
+        quickSearchNext(position);
+    }
+}
+
+void KNTextEditor::quickSearchNext(int position)
+{
+    //Construct a cursor at the beginning of the document.
+    QTextCursor tc = textCursor();
+    if(position != -1)
+    {
+        tc.setPosition(position);
+    }
+    //Check the search forward.
+    if(!quickSearchForward(tc))
+    {
+        tc.movePosition(QTextCursor::Start);
+        quickSearchForward(tc);
+    }
+}
+
+void KNTextEditor::quickSearchPrev(int position)
+{
+    //Check the search backward.
+    QTextCursor tc = textCursor();
+    if(position != -1)
+    {
+        tc.setPosition(position);
+    }
+    if(!quickSearchBackward(tc))
+    {
+        //Construct a cursor at the end of the document.
+        tc.movePosition(QTextCursor::End);
+        quickSearchBackward(tc);
+    }
+}
+
+bool KNTextEditor::quickSearchForward(const QTextCursor &cursor)
+{
+    //Search from the current cursor.
+    auto tc = textCursor();
+    if(cursor.hasSelection())
+    {
+        tc.setPosition(cursor.selectionEnd());
+    }
+    else
+    {
+        tc.setPosition(cursor.position());
+    }
+    for(auto i = tc.block(); i.isValid(); i=i.next())
+    {
+        //Extract the user data.
+        quickSearchCheck(i);
+        //Check the search result.
+        auto data = blockData(i);
+        data->lockQuickSearch();
+        if(!data->results.isEmpty())
+        {
+            //Now compare the position.
+            int cursorPos = (i.blockNumber() == tc.blockNumber()) ?
+                        tc.positionInBlock() : -1;
+            for(int j=0; j<data->results.size(); ++j)
+            {
+                //Check the position.
+                if(data->results.at(j).pos > cursorPos)
+                {
+                    //We find the cursor, move the cursor.
+                    tc.setPosition(i.position() + data->results.at(j).pos);
+                    tc.movePosition(QTextCursor::NextCharacter,
+                                    QTextCursor::KeepAnchor,
+                                    data->results.at(j).length);
+                    data->unlockQuickSearch();
+                    //Set the cursor.
+                    setTextCursor(tc);
+                    return true;
+                }
+            }
+        }
+        data->unlockQuickSearch();
+    }
+    return false;
+}
+
+bool KNTextEditor::quickSearchBackward(const QTextCursor &cursor)
+{
+    //Search from the current cursor.
+    auto tc = cursor;
+    if(tc.hasSelection())
+    {
+        tc.setPosition(tc.selectionStart());
+    }
+    for(auto i = tc.block(); i.isValid(); i=i.previous())
+    {
+        //Extract the user data.
+        quickSearchCheck(i);
+        //Check the search result.
+        auto data = blockData(i);
+        data->lockQuickSearch();
+        if(!data->results.isEmpty())
+        {
+            //Now compare the position.
+            bool isCursorLine = i.blockNumber() == tc.blockNumber();
+            int cursorPos = tc.positionInBlock();
+            for(int j=data->results.size() - 1; j > -1; --j)
+            {
+                //Check the position.
+                if(!isCursorLine || (data->results.at(j).pos < cursorPos))
+                {
+                    //We find the cursor, move the cursor.
+                    tc.setPosition(i.position() + data->results.at(j).pos);
+                    tc.movePosition(QTextCursor::NextCharacter,
+                                    QTextCursor::KeepAnchor,
+                                    data->results.at(j).length);
+                    data->unlockQuickSearch();
+                    setTextCursor(tc);
+                    return true;
+                }
+            }
+        }
+        data->unlockQuickSearch();
+    }
+    return false;
 }
 
 QList<QTextCursor> KNTextEditor::columnCopy()
@@ -681,6 +921,43 @@ void KNTextEditor::updateExtraSelections()
                 selection.format = format;
                 selections.append(selection);
             }
+        }
+    }
+
+    // Quick search result.
+    if(!m_quickSearchKeyword.isEmpty() && m_showResults)
+    {
+        auto block = firstVisibleBlock();
+        QRectF blockRect = blockBoundingGeometry(block);
+        auto searchFormat = knGlobal->quickSearchFormat();
+        while(block.isValid() && blockRect.bottom() < height())
+        {
+            //Add all the selection to the extra selections.
+            QTextEdit::ExtraSelection selection;
+            selection.format = searchFormat;
+            //Ensure block information.
+            quickSearchCheck(block);
+            //Load for all the items to the selections.
+            auto data = blockData(block);
+            if(!data)
+            {
+                break;
+            }
+            for(auto result : data->results)
+            {
+                QTextCursor tc = textCursor();
+                tc.setPosition(block.position() + result.pos);
+                tc.movePosition(QTextCursor::NextCharacter,
+                                QTextCursor::KeepAnchor,
+                                result.length);
+                QTextEdit::ExtraSelection selection;
+                selection.format = searchFormat;
+                selection.cursor = tc;
+                selections.append(selection);
+            }
+            //Move to the next block.
+            block = block.next();
+            blockRect = blockBoundingGeometry(block);
         }
     }
 

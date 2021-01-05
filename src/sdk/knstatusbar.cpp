@@ -12,6 +12,7 @@
  */
 #include "knstatuslabel.h"
 #include "kntexteditor.h"
+#include "knuimanager.h"
 
 #include "knstatusbar.h"
 
@@ -26,6 +27,10 @@ KNStatusBar::KNStatusBar(QWidget *parent) : QStatusBar(parent),
     addPermanentWidget(m_cursorPos);
     addPermanentWidget(m_codecName);
     addPermanentWidget(m_overwrite);
+    //Configure widgets.
+    m_fileInfo->setMinimumWidth(knUi->width(200));
+    m_cursorPos->setMinimumWidth(knUi->width(260));
+    m_codecName->setMinimumWidth(knUi->width(120));
     //Link the signal.
     connect(m_fileInfo, &KNStatusLabel::dblClicked, this, &KNStatusBar::requireSummary);
     connect(m_cursorPos, &KNStatusLabel::dblClicked, this, &KNStatusBar::requireGoto);

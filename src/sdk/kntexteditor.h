@@ -14,6 +14,9 @@
 #define KNTEXTEDITOR_H
 
 #include <QAction>
+#include <QFuture>
+
+#include "kntextsearcher.h"
 
 #include <QPlainTextEdit>
 
@@ -312,6 +315,29 @@ public slots:
      */
     void setCodecName(const QString &codecName);
 
+    /*!
+     * \brief Do quick search at the keywords for the current text editor.
+     * \param keywords The keywords to be searched.
+     * \param cs The case sensitive position.
+     * \param position The default text cursor position.
+     */
+    void quickSearch(const QString &keywords, Qt::CaseSensitivity cs,
+                     int position);
+
+    /*!
+     * \brief Go to the next quick search result.
+     * \param position The text cursor position. To use the current text cursor
+     * position, set to -1.
+     */
+    void quickSearchNext(int position = -1);
+
+    /*!
+     * \brief Go to the previous quick search result.
+     * \param position The text cursor position. To use the current text cursor
+     * position, set to -1.
+     */
+    void quickSearchPrev(int position = -1);
+
 protected:
     /*!
      * \brief Reimplemented from QPlainTextEdit::resizeEvent().
@@ -333,6 +359,12 @@ protected:
      */
     void paintEvent(QPaintEvent *event) override;
 
+    /*!
+     * \brief Reimplemented from QPlainTextEdit::scrollContentsBy().
+     */
+    void scrollContentsBy(int dx, int dy) override;
+
+
 private slots:
     void onBlockCountChanged(int newBlockCount);
     void updatePanelArea(const QRect &rect, int dy);
@@ -341,8 +373,13 @@ private slots:
     void onCursorUpdate();
     void onEditorFontChanged();
     void onWrapModeChange(bool wrap);
+    void onResultDisplayChange(bool showResult);
+    bool quickSearchForward(const QTextCursor &cursor);
+    bool quickSearchBackward(const QTextCursor &cursor);
 
 private:
+    void quickSearchUi(const QTextBlock &block);
+    void quickSearchCheck(const QTextBlock &block);
     QList<QTextCursor> columnCopy();
     QList<QTextCursor> columnSelectionText(QString &selectionText) const;
     void updateExtraSelections();
@@ -357,6 +394,13 @@ private:
     void removeExtraCursor(int id);
     void clearColumnCursor();
     QList<QTextCursor> columnCursors() const;
+
+    QScopedPointer<KNTextSearcher> m_quickSearchPrev, m_quickSearchNext;
+    QFuture<void> m_futurePrev, m_futureNext;
+    QString m_quickSearchKeyword;
+    Qt::CaseSensitivity m_quickSearchSense;
+    unsigned long long int m_quickSearchCode;
+    bool m_showResults;
 
     QList<QMetaObject::Connection> m_connections;
     QTextEdit::ExtraSelection m_currentLine;

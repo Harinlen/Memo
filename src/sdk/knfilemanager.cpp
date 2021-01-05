@@ -60,6 +60,11 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
     mainLayout->addWidget(m_tabBar);
     mainLayout->addWidget(m_editorPanel, 1);
     mainLayout->addWidget(m_searchMenu->searchBar());
+    //Link the search bar.
+    connect(m_searchMenu->searchBar(), &KNSearchBar::requireSetFocus,
+            this, &KNFileManager::setFocusOnEditor);
+    connect(m_searchMenu->searchBar(), &KNSearchBar::requireQuickSearch,
+            this, &KNFileManager::onQuickSearch);
     //Hide the search bar at default.
     m_searchMenu->searchBar()->hide();
     //Connect the tab bar with the panel.
@@ -384,6 +389,16 @@ void KNFileManager::setCurrentTab(int tabId)
 {
     //Change the tab bar index.
     m_tabBar->setCurrentIndex(tabId);
+}
+
+void KNFileManager::setFocusOnEditor()
+{
+    //Set the focus.
+    auto editor = currentEditor();
+    if(editor)
+    {
+        editor->setFocus();
+    }
 }
 
 void KNFileManager::retranslate()
@@ -779,6 +794,18 @@ void KNFileManager::onSetCodec(const QByteArray &codecName)
     }
 }
 
+void KNFileManager::onQuickSearch(const QString &keywords,
+                                  Qt::CaseSensitivity cs, int position)
+{
+    //Check the current editor.
+    auto editor = currentEditor();
+    if(editor)
+    {
+        //Do quick search with the cursor position.
+        editor->quickSearch(keywords, cs, position);
+    }
+}
+
 void KNFileManager::removeEditorAndTab(int index)
 {
     //Extract the editor widget.
@@ -787,7 +814,7 @@ void KNFileManager::removeEditorAndTab(int index)
     m_tabBar->removeTab(index);
     //Remove the editor.
     m_editorPanel->removeWidget(editor);
-    //Disconnect all th editor connections.
+    //Disconnect all the editor connections.
     editor->removeAllLinks();
     //Recover the editor memory.
     editor->deleteLater();

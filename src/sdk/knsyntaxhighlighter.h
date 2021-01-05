@@ -18,6 +18,7 @@
 #include <QSyntaxHighlighter>
 
 class KNTextEdit;
+class KNTextBlockData;
 /*!
  * \brief The KNSyntaxHighlighter class is the default and base syntax
  * highlighter implementation, which manages the format of the file.
@@ -44,6 +45,13 @@ protected:
      * \brief Reimplemented from QSyntaxHighlighter::highlightBlock().
      */
     void highlightBlock(const QString &text) override;
+
+    /*!
+     * \brief Process the syntax related information of the text.
+     * \param text The text of the block.
+     * \param data The data pointer of the current block.
+     */
+    virtual void syntaxProcess(const QString &text, KNTextBlockData *data);
 
 private:
 };

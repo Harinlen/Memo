@@ -13,6 +13,7 @@
 #ifndef KNTEXTBLOCKDATA_H
 #define KNTEXTBLOCKDATA_H
 
+#include <QMutex>
 #include <QTextBlockUserData>
 
 /*!
@@ -24,7 +25,38 @@ class KNTextBlockData : public QTextBlockUserData
 public:
     KNTextBlockData() { }
 
+    struct MarkBlock
+    {
+        int pos;
+        int length;
+        quint8 style;
+    };
+
+    struct SearchMarks
+    {
+        int pos;
+        int length;
+        SearchMarks(int p, int l) :
+            pos(p), length(l) { }
+    };
+    //Bookmarks.
     bool hasBookmark = false;
+    //Mark flags.
+    QVector<MarkBlock> marks;
+    //Quick search data.
+    QVector<SearchMarks> results;
+    unsigned long long int searchCode;
+    bool resultExpire;
+
+    void lockQuickSearch() { lock.lock(); }
+    void unlockQuickSearch() { lock.unlock(); }
+
+    void onBlockChanged()
+    {
+    }
+
+private:
+    QMutex lock;
 };
 
 #endif // KNTEXTBLOCKDATA_H

@@ -35,4 +35,15 @@ void KNSyntaxHighlighter::highlightBlock(const QString &text)
         blockData = new KNTextBlockData;
         setCurrentBlockUserData(blockData);
     }
+    //Mark the block is changed.
+    blockData->onBlockChanged();
+    //Process the syntax color.
+    syntaxProcess(text, blockData);
+}
+
+void KNSyntaxHighlighter::syntaxProcess(const QString &text,
+                                        KNTextBlockData *data)
+{
+    Q_UNUSED(text)
+    Q_UNUSED(data)
 }

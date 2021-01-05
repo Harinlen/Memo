@@ -21,7 +21,8 @@ QT += \
     xml \
     network \
     printsupport \
-    core5compat
+    core5compat \
+    concurrent
 
 # Enabled C++ 17 configures.
 CONFIG += c++17
@@ -90,6 +91,7 @@ HEADERS += \
     sdk/knfindwindow.h \
     sdk/knglobal.h \
     sdk/kngotowindow.h \
+    sdk/knlineedit.h \
     sdk/knlocalpeer.h \
     sdk/knlockedfile.h \
     sdk/knmainwindow.h \
@@ -104,6 +106,7 @@ HEADERS += \
     sdk/kntextblockdata.h \
     sdk/kntexteditor.h \
     sdk/kntexteditorpanel.h \
+    sdk/kntextsearcher.h \
     sdk/kntoolhash.h \
     sdk/kntoolhashfile.h \
     sdk/kntoolhashinput.h \
@@ -124,6 +127,7 @@ SOURCES += \
     sdk/knfindwindow.cpp \
     sdk/knglobal.cpp \
     sdk/kngotowindow.cpp \
+    sdk/knlineedit.cpp \
     sdk/knlocalpeer.cpp \
     sdk/knlockedfile.cpp \
     sdk/knmainwindow.cpp \
@@ -137,6 +141,7 @@ SOURCES += \
     sdk/kntabbar.cpp \
     sdk/kntexteditor.cpp \
     sdk/kntexteditorpanel.cpp \
+    sdk/kntextsearcher.cpp \
     sdk/kntoolhash.cpp \
     sdk/kntoolhashfile.cpp \
     sdk/kntoolhashinput.cpp \

@@ -18,7 +18,7 @@
 class QCheckBox;
 class QPushButton;
 class QLabel;
-class QLineEdit;
+class KNLineEdit;
 /*!
  * \brief The KNSearchBar class provides the quick search bar for the text
  * editor. It is used for the quick / incremental search.
@@ -34,6 +34,19 @@ public:
     explicit KNSearchBar(QWidget *parent = nullptr);
 
 signals:
+    /*!
+     * \brief Require to set as the focus.
+     */
+    void requireSetFocus();
+
+    /*!
+     * \brief Require to do quick search in the current text editor.
+     * \param keyword The keywords text.
+     * \param cs The case sensitivity options.
+     * \param pos The cursor position.
+     */
+    void requireQuickSearch(const QString &keyword, Qt::CaseSensitivity cs,
+                            int pos);
 
 public slots:
     /*!
@@ -53,13 +66,17 @@ public slots:
 
 private slots:
     void retranslate();
+    void onEditHasFocus();
+    void onHideSearchBar();
+    void onKeywordChanged();
 
 private:
     QPushButton *genearteButton(const QString &mark);
-    QLineEdit *m_textBox;
+    KNLineEdit *m_textBox;
     QPushButton *m_close, *m_next, *m_previous;
     QCheckBox *m_highlight, *m_matchCase;
     QLabel *m_findLabel, *m_result;
+    int m_position;
 };
 
 #endif // KNSEARCHBAR_H
