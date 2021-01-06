@@ -23,6 +23,7 @@
 #include "kneditmenu.h"
 #include "knsearchmenu.h"
 #include "knviewmenu.h"
+#include "knhelpmenu.h"
 
 #include "knmainwindow.h"
 
@@ -32,6 +33,8 @@ KNMainWindow::KNMainWindow(QWidget *parent) :
     m_fileManager(nullptr),
     m_statusBar(nullptr)
 {
+    //Update the window icon.
+    setWindowIcon(QIcon(":/memo.png"));
     //Initial the global instance.
     KNGlobal::initial(this);
     //Set the title name.
@@ -65,6 +68,7 @@ void KNMainWindow::initalize()
     menuBar()->addMenu(m_fileManager->viewMenu());
     menuBar()->addMenu(m_fileManager->codecMenu());
     menuBar()->addMenu(m_fileManager->toolMenu());
+    menuBar()->addMenu(new KNHelpMenu(this));
     //Configure the toolbar.
     m_toolbar->setMovable(false);
     m_toolbar->setIconSize(knUi->size(16, 16));

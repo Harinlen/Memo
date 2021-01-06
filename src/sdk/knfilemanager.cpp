@@ -287,9 +287,17 @@ void KNFileManager::createTab()
 
 void KNFileManager::openTabs()
 {
+    //Extract the file path of the current editor.
+    QString startPath;
+    auto editor = currentEditor();
+    if(editor && !editor->filePath().isEmpty())
+    {
+        startPath = QFileInfo(editor->filePath()).absolutePath();
+    }
     //Get the file path.
     QStringList filePaths = QFileDialog::getOpenFileNames(
-                knMainWindow, tr("Open"));
+                knMainWindow, tr("Open"), startPath,
+                knGlobal->fileDialogSuffix());
     //Open the file paths.
     openFiles(filePaths);
 }
@@ -312,9 +320,16 @@ void KNFileManager::saveCopyAs()
     KNTextEditor *editor=currentEditor();
     if(editor)
     {
+        //Get the start path.
+        QString startPath;
+        if(!editor->filePath().isEmpty())
+        {
+            startPath = QFileInfo(editor->filePath()).absolutePath();
+        }
         //Get the file path.
-        QString filePath = QFileDialog::getSaveFileName(knMainWindow,
-                                                        tr("Save Copy To"));
+        QString filePath = QFileDialog::getSaveFileName(
+                    knMainWindow, tr("Save Copy To"), startPath,
+                    knGlobal->fileDialogSuffix());
         if(!filePath.isEmpty())
         {
             editor->saveToFile(filePath);
@@ -589,9 +604,16 @@ bool KNFileManager::saveAsEditor(KNTextEditor *editor)
 {
     if(editor)
     {
+        //Get the start path.
+        QString startPath;
+        if(!editor->filePath().isEmpty())
+        {
+            startPath = QFileInfo(editor->filePath()).absolutePath();
+        }
         //Get the file path.
-        QString filePath = QFileDialog::getSaveFileName(knMainWindow,
-                                                        tr("Save As"));
+        QString filePath = QFileDialog::getSaveFileName(
+                    knMainWindow, tr("Save As"), startPath,
+                    knGlobal->fileDialogSuffix());
         if(!filePath.isEmpty())
         {
             return editor->saveAs(filePath);

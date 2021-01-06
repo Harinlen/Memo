@@ -182,6 +182,13 @@ public:
     QTextCharFormat quickSearchFormat() const;
 
     /*!
+     * \brief Get the mark format.
+     * \param index The index of the mark.
+     * \return The format of the mark.
+     */
+    QTextCharFormat markFormat(int index) const;
+
+    /*!
      * \brief Check whether the quick search display result is shown.
      * \return If the result should be marked, return true.
      */
@@ -192,6 +199,12 @@ public:
      * \param shown To mark the result, set this value to true.
      */
     void setSearchResultShown(bool shown);
+
+    /*!
+     * \brief Get the file dialog suffix data.
+     * \return The file dialog suffix data.
+     */
+    QString fileDialogSuffix() const;
 
 signals:
     /*!
@@ -217,6 +230,9 @@ signals:
      */
     void editorResultDisplayChange(bool result);
 
+private slots:
+    void retranslate();
+
 private:
     explicit KNGlobal(KNMainWindow *parent = nullptr);
     //Disable the copy of the instance.
@@ -227,9 +243,100 @@ private:
     qreal zoomScalar() const;
     void setZoomScalar(const qreal &value);
 
-    QString m_dirPath[DirCount];
+    enum FileSuffixs
+    {
+        ExtAll,
+        ExtText,
+        ExtAda,
+        ExtAssembly,
+        ExtAbsSynNotOne,
+        ExtAsp,
+        ExtAutolt,
+        ExtAviSyn,
+        ExtBaanC,
+        ExtUnix,
+        ExtBat,
+        ExtBlitzBasic,
+        ExtC,
+        ExtCAMLan,
+        ExtCMake,
+        ExtCobol,
+        ExtCsound,
+        ExtCoffeeScript,
+        ExtCpp,
+        ExtCSharp,
+        ExtCss,
+        ExtD,
+        ExtDiff,
+        ExtErlang,
+        ExtEscript,
+        ExtForth,
+        ExtFortranFree,
+        ExtFortranFix,
+        ExtFreeBasic,
+        ExtHaskell,
+        ExtHtml,
+        ExtMsIni,
+        ExtInnoSetup,
+        ExtIntelHex,
+        ExtJava,
+        ExtJavaScript,
+        ExtJson,
+        ExtJavaServer,
+        ExtKiXart,
+        ExtLisp,
+        ExtLatex,
+        ExtLua,
+        ExtMakefile,
+        ExtMatlab,
+        ExtMmixal,
+        ExtNimrod,
+        ExtExtTab,
+        ExtAscArt,
+        ExtNullsoft,
+        ExtOScript,
+        ExtObjectC,
+        ExtPascal,
+        ExtPerl,
+        ExtPhp,
+        ExtPostScript,
+        ExtPowerShell,
+        ExtProperties,
+        ExtPureBasic,
+        ExtPython,
+        ExtR,
+        ExtRebol,
+        ExtReg,
+        ExtResource,
+        ExtRuby,
+        ExtRust,
+        ExtScheme,
+        ExtSmallTalk,
+        ExtSpice,
+        ExtSql,
+        ExtSysVerilog,
+        ExtMotoS,
+        ExtSwift,
+        ExtToolCmd,
+        ExtTek,
+        ExtTex,
+        ExtVisualBasic,
+        ExtVBScript,
+        ExtTxt2tags,
+        ExtVerilog,
+        ExtVhdl,
+        ExtVisualProlog,
+        ExtXml,
+        ExtYaml,
+        FileSuffixCount
+    };
+
+    QString m_suffixNames[FileSuffixCount];
+    QVector<QString> m_suffixLists[FileSuffixCount];
+    QString m_dirPath[DirCount], m_fileDialogSuffix;
     QString m_searchUrl[5];
     QPixmap m_bookmark;
+    QTextCharFormat m_markFormat[6];
     QTextCharFormat m_quickSearchFormat;
     KNMainWindow *m_mainWindow;
     KNConfigure *m_configure;

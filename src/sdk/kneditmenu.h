@@ -15,6 +15,7 @@
 
 #include <QMenu>
 
+class QDockWidget;
 class KNTextEditor;
 /*!
  * \brief The KNEditMenu class provides the edit menu of the main window. It is
@@ -140,6 +141,7 @@ private slots:
     void onSelectNetSearch();
     void onSetReadOnly();
     void onClearReadOnly();
+    void onInsertText(const QString &text);
 
 private:
     enum SortMode
@@ -179,6 +181,7 @@ private:
 
     QVector<QMetaObject::Connection> m_connects;
     KNTextEditor *m_editor;
+    QDockWidget *m_charPanel;
 };
 
 #endif // KNEDITMENU_H

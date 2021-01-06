@@ -101,6 +101,8 @@ private slots:
     void onCount();
     void onReplace();
     void onReplaceAll();
+    void onMarkAll();
+    void onClearMarks();
 
 private:
     enum Buttons

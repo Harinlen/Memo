@@ -23,5 +23,6 @@
         <file>icons/indentGuide.png</file>
         <file>icons/invisibleChar.png</file>
         <file>icons/wrap.png</file>
+        <file>memo.png</file>
     </qresource>
 </RCC>

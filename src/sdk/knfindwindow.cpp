@@ -22,6 +22,8 @@
 #include <QSlider>
 #include <QTextBlock>
 
+#include "knglobal.h"
+#include "kntextblockdata.h"
 #include "knconfiguremanager.h"
 #include "knconfigure.h"
 #include "kntexteditor.h"
@@ -189,6 +191,8 @@ KNFindWindow::KNFindWindow(QWidget *parent) :
     connect(m_buttons[Close], &QPushButton::clicked, this, &KNFindWindow::close);
     connect(m_buttons[Replace], &QPushButton::clicked, this, &KNFindWindow::onReplace);
     connect(m_buttons[ReplaceAll], &QPushButton::clicked, this, &KNFindWindow::onReplaceAll);
+    connect(m_buttons[MarkAll], &QPushButton::clicked, this, &KNFindWindow::onMarkAll);
+    connect(m_buttons[ClearMarks], &QPushButton::clicked, this, &KNFindWindow::onClearMarks);
     //Set the default option.
     //!FIXME: Load from config.
     m_optionNormal->setChecked(true);
@@ -559,7 +563,67 @@ void KNFindWindow::onReplaceAll()
     //Update the count result.
     m_message->setText(infoText(
                            tr("Replace All: %1 occurrence(s) were replaced.").arg(
-                                    QString::number(count))));
+                               QString::number(count))));
+}
+
+void KNFindWindow::onMarkAll()
+{
+    //Convert the find next.
+    auto manager = static_cast<KNFileManager *>(parentWidget());
+    //Fetch the current editor.
+    KNTextEditor *editor = manager->currentEditor();
+    if(!editor)
+    {
+        return;
+    }
+    //Backup the editor status.
+    bool isModified = editor->document()->isModified();
+    //Perform the search until the end, check the result.
+    QTextCursor tc = editor->textCursor();
+    //Check the mark.
+    bool bookmarkCheck = m_matchOption[OptionBookmarkLine]->isChecked();
+    //Create the counter.
+    quint64 count = 0;
+    //Move the cursor to the start.
+    tc.movePosition(QTextCursor::Start);
+    //Loop and try to find next.
+    auto searchCache = createSearchCache();
+    QTextDocument::FindFlags flags = getOneWaySearchFlags();
+    tc = cacheSearch(editor, tc, searchCache, flags);
+    while(!tc.isNull())
+    {
+        if(!bookmarkCheck || editor->blockData(tc.block())->hasBookmark)
+        {
+            //Append the mark to the block data.
+            tc.setCharFormat(knGlobal->markFormat(0));
+            //Increase the count.
+            ++count;
+        }
+        //Preform the next search.
+        tc = cacheSearch(editor, tc, searchCache, flags);
+    }
+    //Update the marks.
+    editor->updateExtraSelections();
+    //Restore the modified.
+    editor->document()->setModified(isModified);
+    //Update the count result.
+    m_message->setText(infoText(
+                           tr("Mark: %1 match(es).").arg(
+                               QString::number(count))));
+}
+
+void KNFindWindow::onClearMarks()
+{
+    //Convert the find next.
+    auto manager = static_cast<KNFileManager *>(parentWidget());
+    //Fetch the current editor.
+    KNTextEditor *editor = manager->currentEditor();
+    if(!editor)
+    {
+        return;
+    }
+    //Clear all the mark block info.
+    editor->clearAllMarks();
 }
 
 void KNFindWindow::findNext()

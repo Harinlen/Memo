@@ -175,7 +175,6 @@ public:
     bool find(const QRegularExpression &exp,
               QTextDocument::FindFlags options = QTextDocument::FindFlags());
 
-
 signals:
     /*!
      * \brief When the title of the document is changed, this signal is emitted.
@@ -338,6 +337,16 @@ public slots:
      */
     void quickSearchPrev(int position = -1);
 
+    /*!
+     * \brief Clear all the extra marks.
+     */
+    void clearAllMarks();
+
+    /*!
+     * \brief Update all the extra selections marks.
+     */
+    void updateExtraSelections();
+
 protected:
     /*!
      * \brief Reimplemented from QPlainTextEdit::resizeEvent().
@@ -382,7 +391,6 @@ private:
     void quickSearchCheck(const QTextBlock &block);
     QList<QTextCursor> columnCopy();
     QList<QTextCursor> columnSelectionText(QString &selectionText) const;
-    void updateExtraSelections();
     void updateHighlighter();
     QString levelLevelString(int spaceLevel, int tabSpacing);
     static int tabSpacePosition(const QTextBlock &block, int pos,

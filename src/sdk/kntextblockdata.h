@@ -30,6 +30,8 @@ public:
         int pos;
         int length;
         quint8 style;
+        MarkBlock(int p, int l, quint8 s) :
+            pos(p), length(l), style(s) { }
     };
 
     struct SearchMarks
@@ -51,9 +53,7 @@ public:
     void lockQuickSearch() { lock.lock(); }
     void unlockQuickSearch() { lock.unlock(); }
 
-    void onBlockChanged()
-    {
-    }
+    void onBlockChanged() { }
 
 private:
     QMutex lock;

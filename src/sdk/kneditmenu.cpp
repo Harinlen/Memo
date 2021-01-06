@@ -18,21 +18,24 @@
 #include <QTextBlock>
 #include <QClipboard>
 #include <QMimeData>
+#include <QDockWidget>
 
 #include "knutil.h"
 #include "kntexteditor.h"
 #include "knglobal.h"
 #include "knuimanager.h"
+#include "kncharpanel.h"
+#include "knmainwindow.h"
 
 #include "kneditmenu.h"
 
 KNEditMenu::KNEditMenu(QWidget *parent) : QMenu(parent),
-    m_editor(nullptr)
+    m_editor(nullptr),
+    m_charPanel(new QDockWidget(this))
 {
     //Link the clipboard check.
     connect(QApplication::clipboard(), &QClipboard::dataChanged,
             this, &KNEditMenu::editorCanPasteCheck);
-
     //Construct actions.
     for(int i=0; i<EditMenuItemCount; ++i)
     {
@@ -43,6 +46,13 @@ KNEditMenu::KNEditMenu(QWidget *parent) : QMenu(parent),
     {
         m_subMenus[i] = new QMenu(this);
     }
+    //Add dock widget.
+    KNCharPanel *panel = new KNCharPanel(m_charPanel);
+    connect(panel, &KNCharPanel::requireInsert,
+            this, &KNEditMenu::onInsertText);
+    m_charPanel->setWidget(panel);
+    knGlobal->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, m_charPanel);
+    m_charPanel->close();
     //Set icons.
     m_menuItems[Undo]->setIcon(QIcon(":/icons/undo.png"));
     m_menuItems[Redo]->setIcon(QIcon(":/icons/redo.png"));
@@ -178,6 +188,7 @@ KNEditMenu::KNEditMenu(QWidget *parent) : QMenu(parent),
     connect(m_menuItems[SelectOpen], &QAction::triggered, this, &KNEditMenu::onSelectOpen);
     connect(m_menuItems[SelectShowInExplorer], &QAction::triggered, this, &KNEditMenu::onSelectShowInExplorer);
     connect(m_menuItems[SelectSearchOnInternet], &QAction::triggered, this, &KNEditMenu::onSelectNetSearch);
+    connect(m_menuItems[CharacterPanel], &QAction::triggered, m_charPanel, &QDockWidget::show);
     connect(m_menuItems[SetReadOnly], &QAction::triggered, this, &KNEditMenu::onSetReadOnly);
     connect(m_menuItems[ClearReadOnly], &QAction::triggered, this, &KNEditMenu::onClearReadOnly);
     //Link translator.
@@ -292,6 +303,8 @@ void KNEditMenu::retranslate()
     m_menuItems[SelectSearchOnInternet]->setText(tr("Search on Internet"));
     m_menuItems[PasteHtml]->setText(tr("Paste HTML Content"));
     m_menuItems[PasteRtf]->setText(tr("Paste RTF Content"));
+    //Update the title.
+    m_charPanel->setWindowTitle(tr("ASCII Code Insertion Panel"));
 }
 
 void KNEditMenu::onCopyAvailable(bool yes)
@@ -842,6 +855,15 @@ void KNEditMenu::onClearReadOnly()
     {
         //Enable the read only mode of the editor.
         m_editor->setReadOnly(false);
+    }
+}
+
+void KNEditMenu::onInsertText(const QString &text)
+{
+    if(m_editor)
+    {
+        //Enable the read only mode of the editor.
+        m_editor->textCursor().insertText(text);
     }
 }
 

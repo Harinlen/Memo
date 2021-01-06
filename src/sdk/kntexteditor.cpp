@@ -780,6 +780,21 @@ void KNTextEditor::quickSearchPrev(int position)
     }
 }
 
+void KNTextEditor::clearAllMarks()
+{
+    //Loop and clear all the marks.
+    QTextBlock block = document()->firstBlock();
+    while(block.isValid())
+    {
+        //Append the mark to the block data.
+        blockData(block)->marks = QVector<KNTextBlockData::MarkBlock>();
+        //Switch to next block.
+        block = block.next();
+    }
+    //Update the selection.
+    updateExtraSelections();
+}
+
 bool KNTextEditor::quickSearchForward(const QTextCursor &cursor)
 {
     //Search from the current cursor.
@@ -925,24 +940,24 @@ void KNTextEditor::updateExtraSelections()
     }
 
     // Quick search result.
-    if(!m_quickSearchKeyword.isEmpty() && m_showResults)
+    auto block = firstVisibleBlock();
+    QRectF blockRect = blockBoundingGeometry(block);
+    auto searchFormat = knGlobal->quickSearchFormat();
+    while(block.isValid() && blockRect.bottom() < height())
     {
-        auto block = firstVisibleBlock();
-        QRectF blockRect = blockBoundingGeometry(block);
-        auto searchFormat = knGlobal->quickSearchFormat();
-        while(block.isValid() && blockRect.bottom() < height())
+        //Load for all the items to the selections.
+        auto data = blockData(block);
+        if(!data)
+        {
+            break;
+        }
+        if(!m_quickSearchKeyword.isEmpty() && m_showResults)
         {
             //Add all the selection to the extra selections.
             QTextEdit::ExtraSelection selection;
             selection.format = searchFormat;
             //Ensure block information.
             quickSearchCheck(block);
-            //Load for all the items to the selections.
-            auto data = blockData(block);
-            if(!data)
-            {
-                break;
-            }
             for(auto result : data->results)
             {
                 QTextCursor tc = textCursor();
@@ -955,10 +970,10 @@ void KNTextEditor::updateExtraSelections()
                 selection.cursor = tc;
                 selections.append(selection);
             }
-            //Move to the next block.
-            block = block.next();
-            blockRect = blockBoundingGeometry(block);
         }
+        //Move to the next block.
+        block = block.next();
+        blockRect = blockBoundingGeometry(block);
     }
 
     setExtraSelections(selections);
@@ -1240,8 +1255,6 @@ void KNTextEditor::setReadOnly(bool ro)
 
 KNTextBlockData *KNTextEditor::blockData(const QTextBlock &block)
 {
-    //Check the block data.
-    ;
     //Get the block data.
     return static_cast<KNTextBlockData *>(block.userData());
 }

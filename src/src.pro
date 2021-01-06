@@ -82,6 +82,7 @@ RESOURCES += \
     resource/resource.qrc
 
 HEADERS += \
+    sdk/kncharpanel.h \
     sdk/kncodecmenu.h \
     sdk/knconfigure.h \
     sdk/knconfiguremanager.h \
@@ -91,6 +92,7 @@ HEADERS += \
     sdk/knfindwindow.h \
     sdk/knglobal.h \
     sdk/kngotowindow.h \
+    sdk/knhelpmenu.h \
     sdk/knlineedit.h \
     sdk/knlocalpeer.h \
     sdk/knlockedfile.h \
@@ -118,6 +120,7 @@ HEADERS += \
 
 SOURCES += \
     main.cpp \
+    sdk/kncharpanel.cpp \
     sdk/kncodecmenu.cpp \
     sdk/knconfigure.cpp \
     sdk/knconfiguremanager.cpp \
@@ -127,6 +130,7 @@ SOURCES += \
     sdk/knfindwindow.cpp \
     sdk/knglobal.cpp \
     sdk/kngotowindow.cpp \
+    sdk/knhelpmenu.cpp \
     sdk/knlineedit.cpp \
     sdk/knlocalpeer.cpp \
     sdk/knlockedfile.cpp \
