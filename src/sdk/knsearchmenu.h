@@ -15,6 +15,7 @@
 
 #include <QMenu>
 
+class QDockWidget;
 class KNFindWindow;
 class KNTextEditor;
 class KNGotoWindow;
@@ -120,6 +121,7 @@ private:
     KNFindWindow *m_searchWindow;
     KNGotoWindow *m_gotoWindow;
     KNSearchBar *m_searchBar;
+    QDockWidget *m_searchResult;
     KNTextEditor *m_editor;
     QAction *m_menuItems[SearchMenuItemCount];
     QMenu *m_subMenus[SearchSubMenuCount];

@@ -19,11 +19,10 @@
 
 #include "kntexteditorpanel.h"
 
-#define MARK_WIDTH (18)
-#define FOLD_WIDTH (14)
-
 KNTextEditorPanel::KNTextEditorPanel(KNTextEditor *parent) : QWidget(parent),
-    m_lineNumberWidth(0)
+    m_lineNumberWidth(0),
+    m_showMarks(true),
+    m_showFold(true)
 {
 }
 
@@ -38,10 +37,47 @@ void KNTextEditorPanel::paintEvent(QPaintEvent *event)
     //Create the painter for the panel.
     QPainter painter(this);
     painter.setRenderHints(QPainter::TextAntialiasing);
+    //Fill the panel.
+    painter.fillRect(rect(), QColor(228, 228, 228));
     //Update the line number area.
     KNTextEditor *editor = static_cast<KNTextEditor *>(parentWidget());
-    //Paint the current line.
-    editor->paintCurrentLine(&painter, width());
     //Paint the line number part.
-    editor->paintSidebar(&painter, m_lineNumberWidth, knUi->width(MARK_WIDTH));
+    editor->paintSidebar(&painter, m_lineNumberWidth,
+                         m_showMarks ? knUi->width(MARK_WIDTH) : 0,
+                         m_showFold ? knUi->width(FOLD_WIDTH) : 0);
+}
+
+bool KNTextEditorPanel::showFold() const
+{
+    return m_showFold;
+}
+
+void KNTextEditorPanel::setShowFold(bool showFold)
+{
+    m_showFold = showFold;
+}
+
+bool KNTextEditorPanel::showMarks() const
+{
+    return m_showMarks;
+}
+
+void KNTextEditorPanel::setShowMarks(bool showMarks)
+{
+    m_showMarks = showMarks;
+}
+
+int KNTextEditorPanel::panelBaseWidth() const
+{
+    //Check the show mark flag.
+    int baseWidth = 0;
+    if(m_showMarks)
+    {
+        baseWidth += knUi->width(MARK_WIDTH);
+    }
+    if(m_showFold)
+    {
+        baseWidth += knUi->width(FOLD_WIDTH);
+    }
+    return baseWidth;
 }

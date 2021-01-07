@@ -55,22 +55,18 @@ public:
     explicit KNTextEditor(const QString &titleName,
                           const QString &filePath = QString(),
                           const QString &codec = QString(),
-                          QWidget *parent = nullptr);
+                          QWidget *parent = nullptr,
+                          KNSyntaxHighlighter *highlighter = nullptr);
 
     /*!
      * \brief Draw the side bar panel.
      * \param painter The panel painter.
      * \param lineNumWidth The line number area width.
      * \param markWidth The line mark width.
+     * \param markFold The fold panel width.
      */
-    void paintSidebar(QPainter *painter, int lineNumWidth, int markWidth);
-
-    /*!
-     * \brief Draw the current line at the side panel.
-     * \param painter The panel painter.
-     * \param width The area width.
-     */
-    void paintCurrentLine(QPainter *painter, int width);
+    void paintSidebar(QPainter *painter, int lineNumWidth,
+                      int markWidth, int foldWidth);
 
     /*!
      * \brief Create a text editor with the file open.
@@ -174,6 +170,30 @@ public:
      */
     bool find(const QRegularExpression &exp,
               QTextDocument::FindFlags options = QTextDocument::FindFlags());
+
+    /*!
+     * \brief Set whether the cursor should be visible or not.
+     * \param yes To Make the cursor visible, set yes to true.
+     */
+    void setCursorVisible(bool yes);
+
+    /*!
+     * \brief Set whether the line number is visible or not.
+     * \param yes To make the line number visible, set yes to true.
+     */
+    void setLineNumberVisible(bool yes);
+
+    /*!
+     * \brief Set whether the bookmark is visible or not.
+     * \param yes To make the bookmark visible, set yes to true.
+     */
+    void setBookmarkVisible(bool yes);
+
+    /*!
+     * \brief Set whether editor would highlight the cursor line.
+     * \param yes To highlight the cursor, set yes to true.
+     */
+    void setHighlightCursor(bool yes);
 
 signals:
     /*!
@@ -387,11 +407,18 @@ private slots:
     bool quickSearchBackward(const QTextCursor &cursor);
 
 private:
+    enum TextEditorOptions
+    {
+        CursorVisible      = 1 << 0,
+        CursorDisplay      = 1 << 1,
+        LineNumberDisplay  = 1 << 2,
+        HighlightCursor    = 1 << 3,
+    };
     void quickSearchUi(const QTextBlock &block);
     void quickSearchCheck(const QTextBlock &block);
     QList<QTextCursor> columnCopy();
     QList<QTextCursor> columnSelectionText(QString &selectionText) const;
-    void updateHighlighter();
+    void updateHighlighter(KNSyntaxHighlighter *highlighter = nullptr);
     QString levelLevelString(int spaceLevel, int tabSpacing);
     static int tabSpacePosition(const QTextBlock &block, int pos,
                                 int tabSpacing);
@@ -418,7 +445,7 @@ private:
     KNTextEditorPanel *m_panel;
     KNSyntaxHighlighter *m_highlighter;
     int m_columnBlockNumber, m_columnOffset;
-    bool m_cursorVisible;
+    int m_editorOptions;
 
 };
 

@@ -50,7 +50,7 @@ void KNGlobal::initial(KNMainWindow *parent)
 }
 
 KNGlobal::KNGlobal(KNMainWindow *parent) : QObject(parent),
-    m_bookmark(QPixmap(":/bookmark.png")),
+    m_bookmark(QPixmap(":/bookmark.png").scaledToWidth(18, Qt::SmoothTransformation)),
     m_mainWindow(parent),
     m_cursorFlash(new QTimer(this)),
     m_searchUrlIndex(0)

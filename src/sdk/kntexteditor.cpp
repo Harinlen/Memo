@@ -41,7 +41,7 @@
 
 KNTextEditor::KNTextEditor(const QString &titleName,
                            const QString &filePath, const QString &codec,
-                           QWidget *parent) :
+                           QWidget *parent, KNSyntaxHighlighter *highlighter) :
     QPlainTextEdit(parent),
     m_quickSearchSense(Qt::CaseInsensitive),
     m_quickSearchCode(0),
@@ -50,14 +50,13 @@ KNTextEditor::KNTextEditor(const QString &titleName,
     m_codecName(codec.toLatin1()),
     m_panel(new KNTextEditorPanel(this)),
     m_columnBlockNumber(-1), m_columnOffset(-1),
-    m_cursorVisible(false)
+    m_editorOptions(HighlightCursor | CursorDisplay | LineNumberDisplay)
 {
     //Set properties.
     setFrameStyle(QFrame::NoFrame);
     setCursorWidth(0);
     //Configure the extra selections.
-    m_currentLine.format.setBackground(QColor(232, 232, 255));
-    m_currentLine.format.setProperty(QTextFormat::FullWidthSelection, true);
+    m_currentLine.format.setBackground(QColor(232, 232, 255, 160));
     //Update the viewport margins.
     updateViewportMargins();
     //Configure the editor based on global settings.
@@ -96,7 +95,7 @@ KNTextEditor::KNTextEditor(const QString &titleName,
         //Only set the title name.
         setDocumentTitle(titleName);
         //Configure and set the highlighter.
-        updateHighlighter();
+        updateHighlighter(highlighter);
     }
     else
     {
@@ -114,7 +113,7 @@ KNTextEditor::KNTextEditor(const QString &titleName,
 }
 
 void KNTextEditor::paintSidebar(QPainter *painter, int lineNumWidth,
-                                int markWidth)
+                                int markWidth, int foldWidth)
 {
     //Update the painter.
     painter->setFont(font());
@@ -122,16 +121,41 @@ void KNTextEditor::paintSidebar(QPainter *painter, int lineNumWidth,
     QTextBlock block = firstVisibleBlock();
     QRectF area;
     const QPixmap &bookmark = knGlobal->bookmark();
-    int markX = lineNumWidth;
+    int markX = lineNumWidth, foldX = markX + markWidth,
+            currentBlock = textCursor().blockNumber();
+    //Draw the fold area background.
+    painter->fillRect(foldX, 0, foldWidth, height(),
+                      QColor(240, 240, 240));
+    //Draw the content.
+    bool drawLineNum = (m_editorOptions & LineNumberDisplay);
+    KNTextBlockData *prevData = nullptr;
+    if(block.previous().isValid())
+    {
+        prevData = blockData(block.previous());
+    }
     while(block.isValid() && area.y() < height())
     {
         //Fetch the block area.
         area = blockBoundingGeometry(block).translated(contentOffset());
+        //Check the block number.
+        if((m_editorOptions & HighlightCursor) &&
+                currentBlock == block.blockNumber())
+        {
+            int height = (currentBlock == document()->blockCount() - 1) ?
+                        area.height() - 3:
+                        area.height();
+            //Fill the background.
+            painter->fillRect(0, area.y(), m_panel->width(), height,
+                              m_currentLine.format.background());
+        }
         //Extract the data from the block.
         //Draw the line number.
-        painter->drawText(0, area.y(), lineNumWidth, area.height(),
-                          Qt::AlignRight,
-                          QString::number(block.blockNumber() + 1));
+        if(drawLineNum)
+        {
+            painter->drawText(0, area.y(), lineNumWidth, area.height(),
+                              Qt::AlignRight,
+                              QString::number(block.blockNumber() + 1));
+        }
         auto data = blockData(block);
         if(data && data->hasBookmark)
         {
@@ -149,17 +173,15 @@ void KNTextEditor::paintSidebar(QPainter *painter, int lineNumWidth,
                 painter->drawPixmap(markX, area.y(), bookmark);
             }
         }
+        //Based on code level, draw the code folding area.
+        if(data->levelMargin > 0)
+        {
+            //Need to draw the expand icon.
+            painter->drawRect(foldX, area.y(), foldWidth, foldWidth);
+        }
         //Move to next block.
         block = block.next();
     }
-}
-
-void KNTextEditor::paintCurrentLine(QPainter *painter, int width)
-{
-    //Draw the current line identifier.
-    QRect &&cursorPos = cursorRect();
-    painter->fillRect(0, cursorPos.y(), width, cursorPos.height(),
-                      QColor(232, 232, 255));
 }
 
 void KNTextEditor::loadFrom(const QString &filePath, const QByteArray &codecName)
@@ -505,11 +527,26 @@ void KNTextEditor::mousePressEvent(QMouseEvent *event)
 
 void KNTextEditor::paintEvent(QPaintEvent *event)
 {
+    //Update the cursor position.
+    QPainter painter(viewport());
+    auto tc = textCursor();
+    if(m_editorOptions & HighlightCursor)
+    {
+        QRectF cursorLine = blockBoundingGeometry(textCursor().block()).translated(
+                    contentOffset());
+        int height = (tc.blockNumber() == document()->blockCount() - 1) ?
+                    cursorLine.height() - 3:
+                    cursorLine.height();
+        painter.fillRect(cursorLine.x(), cursorLine.y(), contentsRect().width(), height,
+                         m_currentLine.format.background());
+    }
+    painter.end();
     //Do original paint event.
     QPlainTextEdit::paintEvent(event);
-    //Update the cursor.
-    QPainter painter(viewport());
-    if(m_cursorVisible)
+    //Start paint again.
+    painter.begin(viewport());
+    int filter = (CursorDisplay | CursorVisible);
+    if((m_editorOptions & filter) == filter)
     {
         if(m_columnBlockNumber == -1)
         {
@@ -557,11 +594,15 @@ void KNTextEditor::onBlockCountChanged(int newBlockCount)
 {
     //Update the block count.
     //Calculate the line count width.
-    QFontMetrics fontMetrics(font());
-    int charWidth = fontMetrics.boundingRect("9").width();
-    int lineNumWidth = charWidth * (QString::number(newBlockCount).length() + 3);
+    int lineNumWidth = 0;
+    if(m_editorOptions & LineNumberDisplay)
+    {
+        QFontMetrics fontMetrics(font());
+        int charWidth = fontMetrics.boundingRect("9").width();
+        lineNumWidth = charWidth * (QString::number(newBlockCount).length() + 3);
+    }
     //Add the fixed other width.
-    m_panel->setFixedWidth(knUi->width(32) + lineNumWidth);
+    m_panel->setFixedWidth(m_panel->panelBaseWidth() + lineNumWidth);
     m_panel->setLineNumberWidth(lineNumWidth);
     //Update the margin.
     updateViewportMargins();
@@ -615,10 +656,20 @@ void KNTextEditor::onTextChanged()
 
 void KNTextEditor::onCursorUpdate()
 {
-    //Change the cursor state.
-    m_cursorVisible = !m_cursorVisible;
-    //Update the viewport.
-    viewport()->update();
+    //Check cursor display state.
+    if(m_editorOptions & CursorDisplay)
+    {
+        //Change the cursor state.
+        m_editorOptions ^= CursorVisible;
+        //Update the viewport.
+        viewport()->update();
+    }
+    //No matter how, we need to update the cursor area.
+    QRectF currentRect = blockBoundingGeometry(textCursor().block()).translated(
+                contentOffset());
+    emit updateRequest(QRect(currentRect.x(),
+                             currentRect.y(), width(),
+                             currentRect.height()), 0);
 }
 
 void KNTextEditor::onEditorFontChanged()
@@ -912,9 +963,12 @@ void KNTextEditor::updateExtraSelections()
     //Construct the selection list.
     QList<QTextEdit::ExtraSelection> selections;
     //Current lines.
-    m_currentLine.cursor = textCursor();
-    m_currentLine.cursor.clearSelection();
-    selections.append(m_currentLine);
+    if(m_editorOptions & HighlightCursor)
+    {
+        m_currentLine.cursor = textCursor();
+        m_currentLine.cursor.clearSelection();
+        selections.append(m_currentLine);
+    }
 
     //Column selections.
     if(m_columnBlockNumber != -1)
@@ -941,7 +995,7 @@ void KNTextEditor::updateExtraSelections()
 
     // Quick search result.
     auto block = firstVisibleBlock();
-    QRectF blockRect = blockBoundingGeometry(block);
+    QRectF blockRect = blockBoundingGeometry(block).translated(contentOffset());
     auto searchFormat = knGlobal->quickSearchFormat();
     while(block.isValid() && blockRect.bottom() < height())
     {
@@ -979,11 +1033,21 @@ void KNTextEditor::updateExtraSelections()
     setExtraSelections(selections);
 }
 
-void KNTextEditor::updateHighlighter()
+void KNTextEditor::updateHighlighter(KNSyntaxHighlighter *highlighter)
 {
     //Check whether the highlighter is set.
-    //Set the new highlighter.
-    m_highlighter = KNSyntaxHighlighter::get(m_filePath);
+    if(highlighter)
+    {
+        m_highlighter = highlighter;
+    }
+    else
+    {
+        //Set the new highlighter.
+        m_highlighter = KNSyntaxHighlighter::get(m_filePath);
+    }
+    //Update the panel based on the highlighter.
+    m_panel->setShowFold(m_highlighter->hasCodeLevel());
+    onBlockCountChanged(document()->blockCount());
     //Configure the highlighter.
     m_highlighter->setDocument(document());
     m_highlighter->rehighlight();
@@ -1050,6 +1114,41 @@ QString KNTextEditor::selectedText() const
     QString buffer;
     columnSelectionText(buffer);
     return buffer;
+}
+
+void KNTextEditor::setCursorVisible(bool yes)
+{
+    //Save as the flash switch.
+    m_editorOptions = yes ? (m_editorOptions | CursorDisplay) :
+                            (m_editorOptions & (~CursorDisplay));
+    //Update the widget.
+    viewport()->update();
+}
+
+void KNTextEditor::setLineNumberVisible(bool yes)
+{
+    //Update the editor options.
+    m_editorOptions = yes ? (m_editorOptions | LineNumberDisplay) :
+                            (m_editorOptions & (~LineNumberDisplay));
+    //Update the viewport margin.
+    onBlockCountChanged(document()->blockCount());
+}
+
+void KNTextEditor::setBookmarkVisible(bool yes)
+{
+    //Update the flag at panel.
+    m_panel->setShowMarks(yes);
+    //Update the viewport margin.
+    onBlockCountChanged(document()->blockCount());
+}
+
+void KNTextEditor::setHighlightCursor(bool yes)
+{
+    //Update the editor options.
+    m_editorOptions = yes ? (m_editorOptions | HighlightCursor) :
+                            (m_editorOptions & (~HighlightCursor));
+    //Update the viewport and current line.
+    updateExtraSelections();
 }
 
 void KNTextEditor::undo()

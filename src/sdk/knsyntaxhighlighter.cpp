@@ -25,6 +25,11 @@ KNSyntaxHighlighter *KNSyntaxHighlighter::get(const QString &filePath)
     return new KNSyntaxHighlighter();
 }
 
+bool KNSyntaxHighlighter::hasCodeLevel() const
+{
+    return false;
+}
+
 void KNSyntaxHighlighter::highlightBlock(const QString &text)
 {
     //Create the user data for the text block.

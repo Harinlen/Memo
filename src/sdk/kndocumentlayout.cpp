@@ -11,12 +11,20 @@
  * license file for more details.
  */
 #include <QTextBlock>
+#include <QPainter>
 
 #include "kndocumentlayout.h"
 
 KNDocumentLayout::KNDocumentLayout(QTextDocument *document) :
     QPlainTextDocumentLayout(document)
 {
+}
+
+void KNDocumentLayout::draw(
+        QPainter *painter,
+        const QAbstractTextDocumentLayout::PaintContext &context)
+{
+    painter->drawRect(context.clip);
 }
 
 void KNDocumentLayout::documentChanged(int from, int charsRemoved, int charsAdded)

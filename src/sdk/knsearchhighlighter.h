@@ -10,24 +10,30 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * license file for more details.
  */
-#ifndef KNDOCUMENTLAYOUT_H
-#define KNDOCUMENTLAYOUT_H
+#ifndef KNSEARCHHIGHLIGHTER_H
+#define KNSEARCHHIGHLIGHTER_H
 
-#include <QPlainTextDocumentLayout>
+#include "knsyntaxhighlighter.h"
 
-class KNDocumentLayout : public QPlainTextDocumentLayout
+class KNSearchHighlighter : public KNSyntaxHighlighter
 {
     Q_OBJECT
 public:
-    explicit KNDocumentLayout(QTextDocument *document);
+    explicit KNSearchHighlighter(QObject *parent = nullptr);
 
-    void draw(QPainter *painter, const PaintContext &context) override;
+    /*!
+     * \brief Reimplemented from KNSyntaxHighlighter::hasCodeLevel().
+     */
+    bool hasCodeLevel() const override;
 
 signals:
 
 protected:
-    void documentChanged(int from, int charsRemoved, int charsAdded) override;
+    void syntaxProcess(const QString &text, KNTextBlockData *data) override;
+
+private:
+    QTextCharFormat m_resultFormat, m_fileFormat, m_lineFormat;
 
 };
 
-#endif // KNDOCUMENTLAYOUT_H
+#endif // KNSEARCHHIGHLIGHTER_H

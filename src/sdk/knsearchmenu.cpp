@@ -21,6 +21,8 @@
 #include "kngotowindow.h"
 #include "knfindwindow.h"
 #include "knsearchbar.h"
+#include "knmainwindow.h"
+#include "knsearchresult.h"
 
 #include "knsearchmenu.h"
 
@@ -28,6 +30,7 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     m_searchWindow(new KNFindWindow(parent)),
     m_gotoWindow(new KNGotoWindow(parent)),
     m_searchBar(new KNSearchBar(parent)),
+    m_searchResult(new KNSearchResult(parentWidget())),
     m_editor(nullptr)
 {
     //Construct actions and items.
@@ -39,6 +42,8 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     {
         m_subMenus[i] = new QMenu(this);
     }
+    //Add to main window.
+    knGlobal->mainWindow()->addDockWidget(Qt::BottomDockWidgetArea, m_searchResult);
     //Add actions.
     addAction(m_menuItems[Find]);
     addAction(m_menuItems[FindInFiles]);

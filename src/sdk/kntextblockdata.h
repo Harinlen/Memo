@@ -24,6 +24,7 @@ class KNTextBlockData : public QTextBlockUserData
 {
 public:
     KNTextBlockData() { }
+    ~KNTextBlockData() { }
 
     struct MarkBlock
     {
@@ -47,8 +48,12 @@ public:
     QVector<MarkBlock> marks;
     //Quick search data.
     QVector<SearchMarks> results;
-    unsigned long long int searchCode;
-    bool resultExpire;
+    unsigned long long int searchCode = 0;
+    bool resultExpire = false;
+    //Grammar syntax.
+    int level = 0;
+    int levelMargin = 0;
+    bool isFold = false;
 
     void lockQuickSearch() { lock.lock(); }
     void unlockQuickSearch() { lock.unlock(); }

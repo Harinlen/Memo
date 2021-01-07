@@ -40,6 +40,12 @@ public:
      */
     static KNSyntaxHighlighter *get(const QString &filePath);
 
+    /*!
+     * \brief Check whether the highlighter supports for code level.
+     * \return The code level.
+     */
+    virtual bool hasCodeLevel() const;
+
 protected:
     /*!
      * \brief Reimplemented from QSyntaxHighlighter::highlightBlock().
