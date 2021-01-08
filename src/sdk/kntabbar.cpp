@@ -10,18 +10,30 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * license file for more details.
  */
+#include <QAction>
+
+#include "kntabswitcher.h"
+#include "knglobal.h"
+
 #include "kntabbar.h"
 
 KNTabBar::KNTabBar(QWidget *parent) : QTabBar(parent),
     m_iconSaved(QIcon(":/icons/saved.ico")),
     m_iconUnsaved(QIcon(":/icons/unsaved.ico")),
-    m_iconReadOnly(QIcon(":/icons/readonly.ico"))
+    m_iconReadOnly(QIcon(":/icons/readonly.ico")),
+    m_tabSwitcher(new KNTabSwitcher(parent))
 {
     //Set properties.
     setTabsClosable(true);
     setMovable(true);
     setExpanding(false);
     setUsesScrollButtons(true);
+    //Create the tab switcher shown shortcut.
+    QAction *showSwitcher = new QAction(parent);
+    showSwitcher->setShortcut(QKeySequence(KNG::CTRL | Qt::Key_Tab));
+    showSwitcher->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    connect(showSwitcher, &QAction::triggered, this, &KNTabBar::onShowSwitcher);
+    parentWidget()->addAction(showSwitcher);
 }
 
 int KNTabBar::createTab(const QString &name)
@@ -90,4 +102,12 @@ void KNTabBar::moveBackward()
     }
     //Move to the next position.
     moveTab(currentIndex(), currentIndex() - 1);
+}
+
+void KNTabBar::onShowSwitcher()
+{
+    //Show the switcher and set focus.
+    m_tabSwitcher->show();
+    m_tabSwitcher->activateWindow();
+    m_tabSwitcher->setFocus();
 }

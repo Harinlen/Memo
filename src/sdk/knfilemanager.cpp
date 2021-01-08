@@ -416,6 +416,17 @@ void KNFileManager::setFocusOnEditor()
     }
 }
 
+void KNFileManager::showCodecDialog()
+{
+    //Check the current editor is saved.
+    auto editor = currentEditor();
+    if(editor->isOnDisk())
+    {
+        //Show the codec dialog.
+        m_codecMenu->showCodecDialog();
+    }
+}
+
 void KNFileManager::retranslate()
 {
     //Update the text.

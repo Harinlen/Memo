@@ -39,9 +39,160 @@
 
 #include "kntexteditor.h"
 
+QTextCodec *codecFromName(const char *name)
+{
+    return QTextCodec::codecForName(name);
+}
+
+QTextCodec *decodeString(const QByteArray &data, QTextCodec *codec,
+                         QString *convert)
+{
+    if(convert != nullptr)
+    {
+        *convert = codec->toUnicode(data);
+    }
+    return codec;
+}
+
+QTextCodec *setDecodeString(const QString &localBuf, QTextCodec *codec,
+                            QString *convert)
+{
+    if(convert != nullptr)
+    {
+        *convert = localBuf;
+    }
+    return codec;
+}
+
+QTextCodec *KNTextEditor::codecFromData(const QByteArray &data,
+                                        QString *convert)
+{
+    enum EncodeType
+    {
+        ePureAscii = 0,
+        eEscAscii  = 1,
+        eHighbyte  = 2
+    };
+    int state = ePureAscii;
+    char mLastChar = '\0';
+    const char* aBuf = data.data();
+    qsizetype aLen = data.length();
+    //Check the BOM, it seems if the data starts with BOM, it is Unicode.
+    if(aLen > 2)
+    {
+        //Check the BOM byte.
+        switch(aBuf[0])
+        {
+        case '\xEF':
+        {
+            if (('\xBB' == aBuf[1]) && ('\xBF' == aBuf[2]))
+            {
+                // EF BB BF  UTF-8 encoded BOM.
+                return decodeString(data, QTextCodec::codecForName("UTF-8"),
+                                    convert);
+            }
+            break;
+        }
+        case '\xFE':
+        {
+            if ('\xFF' == aBuf[1])
+            {
+                // FE FF  UTF-16, big endian BOM
+                return decodeString(data, QTextCodec::codecForName("UTF-16BE"),
+                                    convert);
+            }
+            break;
+        }
+        case '\xFF':
+        {
+            if ('\xFE' == aBuf[1])
+            {
+                // FF FE  UTF-16, little endian BOM
+                return decodeString(data, QTextCodec::codecForName("UTF-16LE"),
+                                    convert);
+            }
+            break;
+        }
+        }
+    }
+    //Detect whether all the characters are ASCII chars.
+    for(int i=0; i < aLen; ++i)
+    {
+        //other than 0xa0, if every othe character is ascii, the page is ascii
+        //Since many Ascii only page contains NBSP
+        if (aBuf[i] & '\x80' && aBuf[i] != '\xA0')
+        {
+            //Non-ASCII byte detected (high-byte in NPP).
+            if(eHighbyte != state)
+            {
+                state = eHighbyte;
+                break;
+            }
+        }
+        else
+        {
+            //ok, just pure ascii so far.
+            if(ePureAscii == state &&
+                    (aBuf[i] == '\033' || (aBuf[i] == '{' && mLastChar == '~')) )
+            {
+                //found escape character or HZ "~{"
+                state = eEscAscii;
+                break;
+            }
+            //Update last char.
+            mLastChar = aBuf[i];
+        }
+    }
+    //Check the input state.
+    QString localBuf;
+    QByteArrayList trialList;
+    switch(state)
+    {
+    case eEscAscii:
+    {
+        trialList << "JIS7";
+        break;
+    }
+    case eHighbyte:
+    {
+        //So first we try the codecs.
+        trialList << "UTF-8"
+                  << "SJIS" << "EUC-JP"
+                  << "EUC-KR"
+                  << "Big5"
+                  // Why Qt's GB18030 implementation does not raises error?
+                  << "GB18030"
+                  // MBCS (multibyte character set)
+//                  << "windows-1251" << "KOI8-R" << "latin5" << "cyrillic"
+//                  << "IBM866" << "windows-1253" << "TIS-620"
+//                  // SBCS (single byte character set)
+//                  << "latin1"
+                     ;
+        break;
+    }
+    default:
+        //Well, it is pure ASCII, then we are going to use system codec.
+        break;
+    }
+    //Loop in the trial list, try all the codec in the list.
+    for(auto name : trialList)
+    {
+        //Try the codec.
+        auto codec = codecFromName(name);
+        QTextCodec::ConverterState cs;
+        localBuf = codec->toUnicode(aBuf, aLen, &cs);
+        if(cs.invalidChars == 0)
+        {
+            return setDecodeString(localBuf, codec, convert);
+        }
+    }
+    return decodeString(data, QTextCodec::codecForLocale(), convert);
+}
+
 KNTextEditor::KNTextEditor(const QString &titleName,
                            const QString &filePath, const QString &codec,
-                           QWidget *parent, KNSyntaxHighlighter *highlighter) :
+                           QWidget *parent, KNSyntaxHighlighter *highlighter,
+                           bool linkWithGlobal) :
     QPlainTextEdit(parent),
     m_quickSearchSense(Qt::CaseInsensitive),
     m_quickSearchCode(0),
@@ -59,27 +210,27 @@ KNTextEditor::KNTextEditor(const QString &titleName,
     m_currentLine.format.setBackground(QColor(232, 232, 255, 160));
     //Update the viewport margins.
     updateViewportMargins();
-    //Configure the editor based on global settings.
-    setSymbolDisplayMode(knGlobal->symbolDisplayMode());
-    onWrapModeChange(knGlobal->isWrap());
-    setTabStopDistance(knGlobal->tabSpacing() *
-                       fontMetrics().averageCharWidth());
-    onEditorFontChanged();
-    onResultDisplayChange(knGlobal->isSearchResultShown());
-    //Reset the text layout.
-//    document()->setDocumentLayout(new KNDocumentLayout(document()));
-
-    //Link the cursor painting signals.
-    addLink(connect(knGlobal->cursorTimer(), &QTimer::timeout,
-                    this, &KNTextEditor::onCursorUpdate));
-    addLink(connect(knGlobal, &KNGlobal::editorFontChange,
-                    this, &KNTextEditor::onEditorFontChanged));
-    addLink(connect(knGlobal, &KNGlobal::editorDisplayModeChange,
-                    this, &KNTextEditor::setSymbolDisplayMode));
-    addLink(connect(knGlobal, &KNGlobal::editorWrapModeChange,
-                    this, &KNTextEditor::onWrapModeChange));
-    addLink(connect(knGlobal, &KNGlobal::editorResultDisplayChange,
-                    this, &KNTextEditor::onResultDisplayChange));
+    if(linkWithGlobal)
+    {
+        //Configure the editor based on global settings.
+        setSymbolDisplayMode(knGlobal->symbolDisplayMode());
+        onWrapModeChange(knGlobal->isWrap());
+        setTabStopDistance(knGlobal->tabSpacing() *
+                           fontMetrics().averageCharWidth());
+        onEditorFontChanged();
+        onResultDisplayChange(knGlobal->isSearchResultShown());
+        //Link the cursor painting signals.
+        addLink(connect(knGlobal->cursorTimer(), &QTimer::timeout,
+                        this, &KNTextEditor::onCursorUpdate));
+        addLink(connect(knGlobal, &KNGlobal::editorFontChange,
+                        this, &KNTextEditor::onEditorFontChanged));
+        addLink(connect(knGlobal, &KNGlobal::editorDisplayModeChange,
+                        this, &KNTextEditor::setSymbolDisplayMode));
+        addLink(connect(knGlobal, &KNGlobal::editorWrapModeChange,
+                        this, &KNTextEditor::onWrapModeChange));
+        addLink(connect(knGlobal, &KNGlobal::editorResultDisplayChange,
+                        this, &KNTextEditor::onResultDisplayChange));
+    }
     //Link the signals.
     connect(this, &KNTextEditor::updateRequest,
             this, &KNTextEditor::updatePanelArea);
@@ -112,6 +263,24 @@ KNTextEditor::KNTextEditor(const QString &titleName,
     setTextCursor(tc);
 }
 
+void drawFoldMark(QPainter *painter, QRect buttonRect, KNTextBlockData *data)
+{
+    //Draw the rect.
+    painter->fillRect(buttonRect, QColor(243, 243, 243));
+    painter->drawRect(buttonRect);
+    if(data->isFold)
+    {
+        ;
+    }
+    else
+    {
+        int foldY = (buttonRect.height() >> 1) + buttonRect.y();
+        int foldX = buttonRect.x() + 2;
+        //Draw a central line across the rect.
+        painter->drawLine(foldX, foldY, foldX + buttonRect.width() - 4, foldY);
+    }
+}
+
 void KNTextEditor::paintSidebar(QPainter *painter, int lineNumWidth,
                                 int markWidth, int foldWidth)
 {
@@ -121,7 +290,7 @@ void KNTextEditor::paintSidebar(QPainter *painter, int lineNumWidth,
     QTextBlock block = firstVisibleBlock();
     QRectF area;
     const QPixmap &bookmark = knGlobal->bookmark();
-    int markX = lineNumWidth, foldX = markX + markWidth,
+    int markX = lineNumWidth, foldX = markX + markWidth + knUi->width(2),
             currentBlock = textCursor().blockNumber();
     //Draw the fold area background.
     painter->fillRect(foldX, 0, foldWidth, height(),
@@ -174,10 +343,28 @@ void KNTextEditor::paintSidebar(QPainter *painter, int lineNumWidth,
             }
         }
         //Based on code level, draw the code folding area.
+        QRect foldRect(foldX, area.y(), foldWidth, area.height());
+
+        int foldSize = (area.height() < foldWidth) ?
+                    (area.height() - knUi->height(4)) :
+                    (foldWidth - knUi->width(4));
+        foldSize = qMax(foldSize, 2);
+        //Draw the center line.
+        int hCenter = foldX + (foldSize >> 1);
+        if(data->level)
+        {
+            painter->drawLine(hCenter, area.y(), hCenter, area.bottom());
+        }
         if(data->levelMargin > 0)
         {
-            //Need to draw the expand icon.
-            painter->drawRect(foldX, area.y(), foldWidth, foldWidth);
+            //Draw the half of the bottom.
+            painter->drawLine(hCenter, area.y() + (area.height() / 2),
+                              hCenter, area.bottom());
+            drawFoldMark(painter,
+                         QRect(foldX,
+                               area.y() + ((area.height() - foldSize) / 2),
+                               foldSize, foldSize),
+                         data);
         }
         //Move to next block.
         block = block.next();
@@ -186,32 +373,16 @@ void KNTextEditor::paintSidebar(QPainter *painter, int lineNumWidth,
 
 void KNTextEditor::loadFrom(const QString &filePath, const QByteArray &codecName)
 {
-    //Read the file.
-    QFile targetFile(filePath);
-    if(!targetFile.open(QIODevice::ReadOnly))
-    {
-        QMessageBox::information(
-                    this,
-                    tr("Open failed"),
-                    tr("Please check if this file is opened in another program."));
-        return;
-    }
-    QTextCodec *codec = QTextCodec::codecForName(codecName);
+    //Get the codec from the codec name.
+    QTextCodec *codec = nullptr;
     //Based on the codec.
-    if(!codec)
+    if(!codecName.isEmpty())
     {
         //Use the default codec.
-        codec = QTextCodec::codecForLocale();
+        codec = QTextCodec::codecForName(codecName);
     }
-    //Decode the file.
-    document()->setPlainText(codec->toUnicode(targetFile.readAll()));
-    targetFile.close();
-    //Set the codec name.
-    setCodecName(codec->name());
-    //Set the file path.
-    setFilePath(filePath);
-    //Update the syntax highlighter.
-    updateHighlighter();
+    //Reload the file.
+    loadFrom(filePath, codec);
 }
 
 bool KNTextEditor::save()
@@ -691,6 +862,7 @@ void KNTextEditor::onResultDisplayChange(bool showResult)
     m_showResults = showResult;
     //Update the selection.
     updateExtraSelections();
+    viewport()->update();
 }
 
 void KNTextEditor::quickSearchUi(const QTextBlock &block)
@@ -831,21 +1003,6 @@ void KNTextEditor::quickSearchPrev(int position)
     }
 }
 
-void KNTextEditor::clearAllMarks()
-{
-    //Loop and clear all the marks.
-    QTextBlock block = document()->firstBlock();
-    while(block.isValid())
-    {
-        //Append the mark to the block data.
-        blockData(block)->marks = QVector<KNTextBlockData::MarkBlock>();
-        //Switch to next block.
-        block = block.next();
-    }
-    //Update the selection.
-    updateExtraSelections();
-}
-
 bool KNTextEditor::quickSearchForward(const QTextCursor &cursor)
 {
     //Search from the current cursor.
@@ -960,6 +1117,11 @@ QList<QTextCursor> KNTextEditor::columnSelectionText(QString &selectionText) con
 
 void KNTextEditor::updateExtraSelections()
 {
+    if(m_connections.isEmpty())
+    {
+        //No need to maintian extra selection in this case.
+        return;
+    }
     //Construct the selection list.
     QList<QTextEdit::ExtraSelection> selections;
     //Current lines.
@@ -1208,6 +1370,48 @@ void KNTextEditor::loadUseCodec(const QByteArray &codecName)
 {
     //Load the file.
     loadFrom(m_filePath, codecName);
+}
+
+void KNTextEditor::loadUseCodec(QTextCodec *codec)
+{
+    //Load the file.
+    loadFrom(m_filePath, codec);
+}
+
+void KNTextEditor::loadFrom(const QString &filePath, QTextCodec *codec)
+{
+    //Read the file.
+    QFile targetFile(filePath);
+    if(!targetFile.open(QIODevice::ReadOnly))
+    {
+        QMessageBox::information(
+                    this,
+                    tr("Open failed"),
+                    tr("Please check if this file is opened in another program."));
+        return;
+    }
+    //Use codec to decode the file.
+    QByteArray &&fileContent = targetFile.readAll();
+    targetFile.close();
+    //Decode the file from the codec.
+    QString fileText;
+    if(codec == nullptr)
+    {
+        //Smart decode.
+        codec = codecFromData(fileContent, &fileText);
+    }
+    else
+    {
+        fileText = codec->toUnicode(fileContent);
+    }
+    //Set the file text to document.
+    document()->setPlainText(fileText);
+    //Set the codec name.
+    setCodecName(codec->name());
+    //Set the file path.
+    setFilePath(filePath);
+    //Update the syntax highlighter.
+    updateHighlighter();
 }
 
 int KNTextEditor::firstNonSpacePos(const QTextBlock &block)

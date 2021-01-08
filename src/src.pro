@@ -21,8 +21,9 @@ QT += \
     xml \
     network \
     printsupport \
-    core5compat \
     concurrent
+
+greaterThan(QT_MAJOR_VERSION, 5): QT += core5compat
 
 # Enabled C++ 17 configures.
 CONFIG += c++17
@@ -83,6 +84,7 @@ RESOURCES += \
 
 HEADERS += \
     sdk/kncharpanel.h \
+    sdk/kncodecdialog.h \
     sdk/kncodecmenu.h \
     sdk/knconfigure.h \
     sdk/knconfiguremanager.h \
@@ -99,12 +101,15 @@ HEADERS += \
     sdk/knmainwindow.h \
     sdk/knrecentfilerecorder.h \
     sdk/knsearchbar.h \
+    sdk/knsearchhighlighter.h \
     sdk/knsearchmenu.h \
+    sdk/knsearchresult.h \
     sdk/knsingletonapplication.h \
     sdk/knstatusbar.h \
     sdk/knstatuslabel.h \
     sdk/knsyntaxhighlighter.h \
     sdk/kntabbar.h \
+    sdk/kntabswitcher.h \
     sdk/kntextblockdata.h \
     sdk/kntexteditor.h \
     sdk/kntexteditorpanel.h \
@@ -121,6 +126,7 @@ HEADERS += \
 SOURCES += \
     main.cpp \
     sdk/kncharpanel.cpp \
+    sdk/kncodecdialog.cpp \
     sdk/kncodecmenu.cpp \
     sdk/knconfigure.cpp \
     sdk/knconfiguremanager.cpp \
@@ -137,12 +143,15 @@ SOURCES += \
     sdk/knmainwindow.cpp \
     sdk/knrecentfilerecorder.cpp \
     sdk/knsearchbar.cpp \
+    sdk/knsearchhighlighter.cpp \
     sdk/knsearchmenu.cpp \
+    sdk/knsearchresult.cpp \
     sdk/knsingletonapplication.cpp \
     sdk/knstatusbar.cpp \
     sdk/knstatuslabel.cpp \
     sdk/knsyntaxhighlighter.cpp \
     sdk/kntabbar.cpp \
+    sdk/kntabswitcher.cpp \
     sdk/kntexteditor.cpp \
     sdk/kntexteditorpanel.cpp \
     sdk/kntextsearcher.cpp \

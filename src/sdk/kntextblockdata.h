@@ -44,8 +44,6 @@ public:
     };
     //Bookmarks.
     bool hasBookmark = false;
-    //Mark flags.
-    QVector<MarkBlock> marks;
     //Quick search data.
     QVector<SearchMarks> results;
     unsigned long long int searchCode = 0;

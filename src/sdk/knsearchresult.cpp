@@ -13,13 +13,14 @@
 #include "knuimanager.h"
 #include "kntexteditor.h"
 #include "knsearchhighlighter.h"
+#include "knglobal.h"
 
 #include "knsearchresult.h"
 
 KNSearchResult::KNSearchResult(QWidget *parent) :
     QDockWidget(parent),
     m_editor(new KNTextEditor(QString(), QString(), QString(), this,
-                              new KNSearchHighlighter(this)))
+                              new KNSearchHighlighter(this), false))
 {
     //Configure the editor.
     m_editor->setReadOnly(true);
@@ -27,7 +28,10 @@ KNSearchResult::KNSearchResult(QWidget *parent) :
     m_editor->setLineNumberVisible(false);
     m_editor->setBookmarkVisible(false);
     m_editor->setHighlightCursor(false);
+    m_editor->setFont(knGlobal->editorPresetFont());
     setWidget(m_editor);
+    //Disconnect from the file manager.
+
     //Link the translator.
     knUi->addTranslate(this, &KNSearchResult::retranslate);
     //Add one result.
@@ -37,11 +41,14 @@ KNSearchResult::KNSearchResult(QWidget *parent) :
 void KNSearchResult::addResult()
 {
     //Append the title of the text.
-    m_editor->appendPlainText(
-                "Search 'bool' (5 hits in 1 file of 1 searched)\n"
+    for(int i=0; i<3; ++i)
+    {
+        m_editor->appendPlainText(
+                    "Search 'bool' (5 hits in 1 file of 1 searched)\n"
                 "  C:/Users/a.txt (5 hits)\n"
                 "    Line 1: asdfasdf\n"
-                "    Line 2: qowieuroqiewu\n");
+                "    Line 2: qowieuroqiewu");
+    }
 }
 
 void KNSearchResult::retranslate()

@@ -206,6 +206,12 @@ public:
      */
     QString fileDialogSuffix() const;
 
+    /*!
+     * \brief Get the preset font of the editor.
+     * \return The preset font.
+     */
+    QFont editorPresetFont() const;
+
 signals:
     /*!
      * \brief When the display font is change, this signal is emitted.

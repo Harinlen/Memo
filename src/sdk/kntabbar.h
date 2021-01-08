@@ -17,6 +17,7 @@
 
 #include <QTabBar>
 
+class KNTabSwitcher;
 /*!
  * \brief The KNTabBar class provides the tab bar widget of the tab manager.
  */
@@ -72,8 +73,12 @@ public slots:
      */
     void moveBackward();
 
+private slots:
+    void onShowSwitcher();
+
 private:
     QIcon m_iconSaved, m_iconUnsaved, m_iconReadOnly;
+    KNTabSwitcher *m_tabSwitcher;
 };
 
 #endif // KNTABBAR_H

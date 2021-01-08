@@ -166,6 +166,7 @@ public slots:
     void closeAllSaved();
     void setCurrentTab(int tabId);
     void setFocusOnEditor();
+    void showCodecDialog();
 
 private slots:
     void retranslate();

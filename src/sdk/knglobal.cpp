@@ -246,6 +246,11 @@ void KNGlobal::setZoomScalar(const qreal &value)
     emit editorFontChange();
 }
 
+QFont KNGlobal::editorPresetFont() const
+{
+    return m_presetFont;
+}
+
 QString KNGlobal::fileDialogSuffix() const
 {
     return m_fileDialogSuffix;

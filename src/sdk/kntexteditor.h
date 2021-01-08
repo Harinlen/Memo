@@ -20,6 +20,7 @@
 
 #include <QPlainTextEdit>
 
+class QTextCodec;
 class KNSyntaxHighlighter;
 class KNTextBlockData;
 class KNTextEditorPanel;
@@ -48,6 +49,15 @@ public:
     };
 
     /*!
+     * \brief Guess the codec from the exist data.
+     * \param data The binary data to guess the string.
+     * \param convert The convert result buffer.
+     * \return The best match text codec.
+     */
+    static QTextCodec *codecFromData(const QByteArray &data,
+                                     QString *convert = nullptr);
+
+    /*!
      * \brief Construct a KNTextEditor widget.
      * \param titleName The tab name of the editor.
      * \param parent The parent widget.
@@ -56,7 +66,8 @@ public:
                           const QString &filePath = QString(),
                           const QString &codec = QString(),
                           QWidget *parent = nullptr,
-                          KNSyntaxHighlighter *highlighter = nullptr);
+                          KNSyntaxHighlighter *highlighter = nullptr,
+                          bool linkWithGlobal = true);
 
     /*!
      * \brief Draw the side bar panel.
@@ -263,9 +274,22 @@ public slots:
     void loadUseCodec(const QByteArray &codecName);
 
     /*!
+     * \brief Open the file using a different codec.
+     * \param codec The codec pointer.
+     */
+    void loadUseCodec(QTextCodec *codec);
+
+    /*!
      * \brief Load the file to the current editor with a specific codec.
      * \param filePath The file path.
-     * \param codec The file encoding codec.
+     * \param codec The codec pointer.
+     */
+    void loadFrom(const QString &filePath, QTextCodec *codec);
+
+    /*!
+     * \brief Load the file to the current editor with a specific codec.
+     * \param filePath The file path.
+     * \param codecName The file encoding codec.
      */
     void loadFrom(const QString &filePath, const QByteArray &codecName = QByteArray());
 
@@ -356,11 +380,6 @@ public slots:
      * position, set to -1.
      */
     void quickSearchPrev(int position = -1);
-
-    /*!
-     * \brief Clear all the extra marks.
-     */
-    void clearAllMarks();
 
     /*!
      * \brief Update all the extra selections marks.

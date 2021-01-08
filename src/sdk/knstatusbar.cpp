@@ -35,6 +35,7 @@ KNStatusBar::KNStatusBar(QWidget *parent) : QStatusBar(parent),
     connect(m_fileInfo, &KNStatusLabel::dblClicked, this, &KNStatusBar::requireSummary);
     connect(m_cursorPos, &KNStatusLabel::dblClicked, this, &KNStatusBar::requireGoto);
     connect(m_overwrite, &KNStatusLabel::dblClicked, this, &KNStatusBar::requireOverwrite);
+    connect(m_codecName, &KNStatusLabel::dblClicked, this, &KNStatusBar::requireCodec);
 }
 
 void KNStatusBar::linkEditor(KNTextEditor *editor)

@@ -61,6 +61,8 @@ void KNMainWindow::initalize()
             m_fileManager->searchMenuItem(KNSearchMenu::GoTo), &QAction::trigger);
     connect(m_statusBar, &KNStatusBar::requireSummary,
             m_fileManager->viewMenuItem(KNViewMenu::Summary), &QAction::trigger);
+    connect(m_statusBar, &KNStatusBar::requireCodec,
+            m_fileManager, &KNFileManager::showCodecDialog);
     //Add menu.
     menuBar()->addMenu(m_fileManager->fileMenu());
     menuBar()->addMenu(m_fileManager->editMenu());

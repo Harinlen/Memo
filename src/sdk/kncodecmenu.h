@@ -15,6 +15,7 @@
 
 #include <QMenu>
 
+class KNCodecDialog;
 /*!
  * \brief The KNCodecMenu class provides the codec menu. This is the Notepad++
  * like codec menu, however, removed multiple useless codec.
@@ -41,6 +42,12 @@ signals:
      * \param codecName The name of the codec.
      */
     void requireSetCodec(const QByteArray &codecName);
+
+public slots:
+    /*!
+     * \brief Show the codec dialog.
+     */
+    void showCodecDialog();
 
 private slots:
     void retranslate();
@@ -83,9 +90,6 @@ private:
         JapaneseShiftJIS,
         JapaneseEUCJP,
         JapaneseISO2022JP,
-        JapaneseSJIS,
-        JapaneseMSKanji,
-        JapaneseJIS7,
         KoreanWindows949,
         KoreanEUCKR,
         ThaTIS620,
@@ -125,6 +129,8 @@ private:
         CodecVietnamese,
         CodecSubMenuCount
     };
+
+    KNCodecDialog *m_codecDialog;
     QByteArray m_codecNames[CodecMenuItemCount];
     QMenu *m_subMenus[CodecSubMenuCount];
     QAction *m_menuItems[CodecMenuItemCount];

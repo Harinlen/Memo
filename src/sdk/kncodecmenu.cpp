@@ -12,11 +12,14 @@
  */
 #include <QSignalMapper>
 
+#include "kncodecdialog.h"
 #include "knuimanager.h"
+#include "knfilemanager.h"
 
 #include "kncodecmenu.h"
 
-KNCodecMenu::KNCodecMenu(QWidget *parent) : QMenu(parent)
+KNCodecMenu::KNCodecMenu(QWidget *parent) : QMenu(parent),
+    m_codecDialog(new KNCodecDialog(parent))
 {
     //Construct items and menus.
     for(int i=0; i<CodecSubMenuCount; ++i)
@@ -72,9 +75,7 @@ KNCodecMenu::KNCodecMenu(QWidget *parent) : QMenu(parent)
     m_subMenus[CodecJapanese]->addAction(m_menuItems[JapaneseShiftJIS]);
     m_subMenus[CodecJapanese]->addAction(m_menuItems[JapaneseEUCJP]);
     m_subMenus[CodecJapanese]->addAction(m_menuItems[JapaneseISO2022JP]);
-    m_subMenus[CodecJapanese]->addAction(m_menuItems[JapaneseSJIS]);
     m_subMenus[CodecJapanese]->addAction(m_menuItems[JapaneseShiftJIS]);
-    m_subMenus[CodecJapanese]->addAction(m_menuItems[JapaneseJIS7]);
     m_subMenus[CodecSets]->addMenu(m_subMenus[CodecKorean]);
     m_subMenus[CodecKorean]->addAction(m_menuItems[KoreanWindows949]);
     m_subMenus[CodecKorean]->addAction(m_menuItems[KoreanEUCKR]);
@@ -126,12 +127,9 @@ KNCodecMenu::KNCodecMenu(QWidget *parent) : QMenu(parent)
     m_menuItems[HebISO88598]->setText("ISO 8859-8");
     m_menuItems[HebISO88598I]->setText("ISO 8859-8-I");
     m_menuItems[HebWindows1255]->setText("Windows 1255");
-    m_menuItems[JapaneseShiftJIS]->setText("Shift JIS");
+    m_menuItems[JapaneseShiftJIS]->setText("Shift JIS / SJIS / MS Kanji");
     m_menuItems[JapaneseEUCJP]->setText("EUC-JP");
-    m_menuItems[JapaneseISO2022JP]->setText("ISO 2022-JP");
-    m_menuItems[JapaneseSJIS]->setText("SJIS");
-    m_menuItems[JapaneseMSKanji]->setText("MS Kanji");
-    m_menuItems[JapaneseJIS7]->setText("JIS7");
+    m_menuItems[JapaneseISO2022JP]->setText("ISO 2022-JP / JIS7");
     m_menuItems[KoreanWindows949]->setText("Windows 949");
     m_menuItems[KoreanEUCKR]->setText("EUC-KR");
     m_menuItems[ThaTIS620]->setText("TIS-620");
@@ -180,9 +178,6 @@ KNCodecMenu::KNCodecMenu(QWidget *parent) : QMenu(parent)
     m_codecNames[JapaneseShiftJIS] = "Shift_JIS";
     m_codecNames[JapaneseEUCJP] = "EUC-JP";
     m_codecNames[JapaneseISO2022JP] = "ISO-2022-JP";
-    m_codecNames[JapaneseSJIS] = "SJIS";
-    m_codecNames[JapaneseMSKanji] = "MS_Kanji";
-    m_codecNames[JapaneseJIS7] = "JIS7";
     m_codecNames[KoreanWindows949] = "windows-949";
     m_codecNames[KoreanEUCKR] = "EUC-KR";
     m_codecNames[ThaTIS620] = "TIS-620";
@@ -217,6 +212,18 @@ KNCodecMenu::KNCodecMenu(QWidget *parent) : QMenu(parent)
     }
     connect(saveMapper, &QSignalMapper::mappedInt,
             this, &KNCodecMenu::setCurrentCodec);
+}
+
+void KNCodecMenu::showCodecDialog()
+{
+    //Get the current editor.
+    KNFileManager *manager = static_cast<KNFileManager *>(parentWidget());
+    auto editor = manager->currentEditor();
+    if(editor)
+    {
+        //Show the dialog.
+        m_codecDialog->showDialog(editor);
+    }
 }
 
 void KNCodecMenu::retranslate()

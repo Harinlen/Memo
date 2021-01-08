@@ -61,12 +61,12 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     addAction(m_menuItems[GoTo]);
     addAction(m_menuItems[GoToMatch]);
     addAction(m_menuItems[SelectBetween]);
-    addAction(m_menuItems[Mark]);
-    addSeparator();
-    addMenu(m_subMenus[MarkAll]);
-    addMenu(m_subMenus[UnmarkAll]);
-    addMenu(m_subMenus[JumpUp]);
-    addMenu(m_subMenus[JumpDown]);
+//    addAction(m_menuItems[Mark]);
+//    addSeparator();
+//    addMenu(m_subMenus[MarkAll]);
+//    addMenu(m_subMenus[UnmarkAll]);
+//    addMenu(m_subMenus[JumpUp]);
+//    addMenu(m_subMenus[JumpDown]);
     addSeparator();
     addMenu(m_subMenus[Bookmark]);
     m_subMenus[Bookmark]->addAction(m_menuItems[BookmarkToggle]);
@@ -95,6 +95,7 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     m_menuItems[Replace]->setShortcut(QKeySequence::Replace);
     m_menuItems[SelectAndFindNext]->setShortcut(QKeySequence(KNG::CTRL | Qt::Key_F3));
     m_menuItems[SelectAndFindPrev]->setShortcut(QKeySequence(KNG::CTRL | KNG::SHIFT | Qt::Key_F3));
+    m_menuItems[IncrementSearch]->setShortcut(QKeySequence(KNG::CTRL | KNG::ALT | Qt::Key_I));
     m_menuItems[GoTo]->setShortcut(QKeySequence(KNG::CTRL | Qt::Key_G));
     m_menuItems[BookmarkToggle]->setShortcut(QKeySequence(KNG::CTRL | Qt::Key_F2));
     m_menuItems[BookmarkNext]->setShortcut(QKeySequence(Qt::Key_F2));
@@ -109,7 +110,7 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     connect(m_menuItems[Replace], &QAction::triggered, this, &KNSearchMenu::onReplace);
     connect(m_menuItems[IncrementSearch], &QAction::triggered, m_searchBar, &KNSearchBar::showAndSetFocus);
     connect(m_menuItems[GoTo], &QAction::triggered, this, &KNSearchMenu::onGoto);
-    connect(m_menuItems[Mark], &QAction::triggered, this, &KNSearchMenu::onMark);
+//    connect(m_menuItems[Mark], &QAction::triggered, this, &KNSearchMenu::onMark);
     connect(m_menuItems[BookmarkToggle], &QAction::triggered, this, &KNSearchMenu::onBookmarkToggle);
     connect(m_menuItems[BookmarkNext], &QAction::triggered, this, &KNSearchMenu::onBookmarkNext);
     connect(m_menuItems[BookmarkPrev], &QAction::triggered, this, &KNSearchMenu::onBookmarkPrev);
