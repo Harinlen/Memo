@@ -480,14 +480,15 @@ void KNFindWindow::onCount()
     }
     auto searchCache = createSearchCache();
     //Start the first search.
-    tc = cacheSearch(editor, tc, searchCache, flags);
+    auto doc = editor->document();
+    tc = cacheSearch(doc, tc, searchCache, flags);
     //Loop and search for the result.
     while(!tc.isNull())
     {
         //Search the next result.
         ++count;
         //Keep searching.
-        tc = cacheSearch(editor, tc, searchCache, flags);
+        tc = cacheSearch(doc, tc, searchCache, flags);
     }
     //Update the count result.
     m_message->setText(infoText(tr("Count: %1 match(es).").arg(
@@ -546,7 +547,8 @@ void KNFindWindow::onReplaceAll()
     auto searchCache = createSearchCache();
     QTextDocument::FindFlags flags = getOneWaySearchFlags();
     const QString &replaceText = m_replaceText->currentText();
-    tc = cacheSearch(editor, tc, searchCache, flags);
+    auto doc = editor->document();
+    tc = cacheSearch(doc, tc, searchCache, flags);
     while(!tc.isNull())
     {
         //Replace the text.
@@ -555,7 +557,7 @@ void KNFindWindow::onReplaceAll()
         //Increase the count.
         ++count;
         //Preform the next search.
-        tc = cacheSearch(editor, tc, searchCache, flags);
+        tc = cacheSearch(doc, tc, searchCache, flags);
     }
     rawPos.endEditBlock();
     //Move back to the position.
@@ -771,7 +773,7 @@ QTextCursor KNFindWindow::performSearch(KNTextEditor *editor,
                                         const QTextCursor &tc,
                                         QTextDocument::FindFlags flags)
 {
-    return cacheSearch(editor, tc, createSearchCache(), flags);
+    return cacheSearch(editor->document(), tc, createSearchCache(), flags);
 }
 
 QTextBlock matchLines(QTextBlock block, const QStringList &lines,
@@ -846,12 +848,11 @@ QTextBlock regMatchLines(QTextBlock block, const QVector<QRegularExpression> &ex
     return block;
 }
 
-QTextCursor KNFindWindow::cacheSearch(KNTextEditor *editor,
+QTextCursor KNFindWindow::cacheSearch(QTextDocument *doc,
                                       const QTextCursor &tc,
                                       const KNFindWindow::SearchCache &cache,
                                       QTextDocument::FindFlags flags)
 {
-    auto doc = editor->document();
     //Check the cache regular expression settings.
     if(cache.useReg)
     {

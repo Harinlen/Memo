@@ -25,6 +25,24 @@ class KNSearchResult : public QDockWidget
 {
     Q_OBJECT
 public:
+    struct ItemResult
+    {
+        int pos;
+        int length;
+    };
+
+    struct FileResult
+    {
+        QString path;
+        QVector<ItemResult> items;
+    };
+
+    struct SearchResult
+    {
+        QString keyword;
+        QVector<FileResult> results;
+    };
+
     /*!
      * \brief Construct a KNSearchResult widget.
      * \param parent The parent widget.

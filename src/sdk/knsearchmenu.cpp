@@ -43,7 +43,8 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
         m_subMenus[i] = new QMenu(this);
     }
     //Add to main window.
-    knGlobal->mainWindow()->addDockWidget(Qt::BottomDockWidgetArea, m_searchResult);
+    knGlobal->mainWindow()->addDockWidget(Qt::BottomDockWidgetArea,
+                                          m_searchResult);
     //Add actions.
     addAction(m_menuItems[Find]);
     addAction(m_menuItems[FindInFiles]);

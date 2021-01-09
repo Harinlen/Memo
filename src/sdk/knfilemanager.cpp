@@ -34,6 +34,7 @@
 #include "knsearchbar.h"
 #include "kntoolmenu.h"
 #include "knrecentfilerecorder.h"
+#include "kntabswitcher.h"
 
 #include "knfilemanager.h"
 
@@ -47,6 +48,7 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
     m_recent(new KNRecentFileRecorder(this)),
     m_tabBar(new KNTabBar(this)),
     m_editorPanel(new QStackedWidget(this)),
+    m_tabSwitcher(new KNTabSwitcher(parent)),
     m_newCounter(0)
 {
     //Set properties.
@@ -81,6 +83,15 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
         //Insert the panel to the new position.
         m_editorPanel->insertWidget(to, widget);
     });
+    //Create the tab switcher shown shortcut.
+    QAction *showSwitcher = new QAction(knGlobal->mainWindow());
+    showSwitcher->setShortcut(QKeySequence(KNG::CTRL | Qt::Key_Tab));
+    showSwitcher->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    connect(showSwitcher, &QAction::triggered, this, &KNFileManager::onShowSwitcher);
+    knGlobal->mainWindow()->addAction(showSwitcher);
+    //Link the switcher.
+    connect(m_tabSwitcher, &KNTabSwitcher::requireShowEditor,
+            this, &KNFileManager::onShowEditor);
     //Link the view menu.
     connect(m_viewMenu, &KNViewMenu::requireToTab,
             this, &KNFileManager::setCurrentTab);
@@ -457,6 +468,36 @@ void KNFileManager::retranslate()
     m_subMenus[CloseMore]->setTitle(tr("Close More"));
 }
 
+void KNFileManager::onShowSwitcher()
+{
+    //Check editor count.
+    if(m_tabBar->count() > 1)
+    {
+        //Reposition the tab switcher.
+        KNMainWindow *mainWindow = knGlobal->mainWindow();
+        m_tabSwitcher->resize(m_tabSwitcher->sizeHint());
+        m_tabSwitcher->move(
+                    mainWindow->x() + ((mainWindow->width() - m_tabSwitcher->width()) >> 1),
+                    mainWindow->y() + ((mainWindow->height() - m_tabSwitcher->height()) >> 1));
+        //Show the switcher and set focus.
+        m_tabSwitcher->show();
+        m_tabSwitcher->activateWindow();
+        m_tabSwitcher->setFocus();
+        m_tabSwitcher->setCurrentIndex(m_tabSwitcher->model()->index(1, 0));
+    }
+}
+
+void KNFileManager::onShowEditor(KNTextEditor *editor)
+{
+    //Find the editor in the panel.
+    int editorId = m_editorPanel->indexOf(editor);
+    if(Q_UNLIKELY(editorId != -1))
+    {
+        //Show the editor.
+        setCurrentTab(editorId);
+    }
+}
+
 void KNFileManager::onReloadCurrent()
 {
     //Check the current editor.
@@ -491,6 +532,9 @@ void KNFileManager::onTabChange(int index)
         auto editor = currentEditor();
         //Update the editor with the global settings.
         editor->setFocus();
+        editor->activateWindow();
+        //Move the editor to the top.
+        m_tabSwitcher->topEditor(editor);
         //Update the menu target.
         m_editMenu->setEditor(editor);
         m_searchMenu->setEditor(editor);
@@ -591,6 +635,8 @@ int KNFileManager::createEditorTab(KNTextEditor *editor)
     linkEditor(editor);
     //Add editor to panel.
     m_editorPanel->addWidget(editor);
+    //Add editor to tab switcher.
+    m_tabSwitcher->addEditor(editor);
     //Add a new tab.
     return m_tabBar->createTab(editor->documentTitle());
 }
@@ -657,6 +703,10 @@ bool KNFileManager::closeEditor(int editorId)
 {
     //Get the editor.
     auto editor = editorAt(editorId);
+    if(Q_UNLIKELY(editor == nullptr))
+    {
+        return true;
+    }
     //If this is an empty new file and it is the last one, do not close.
     if(isEditorNewEmpty(editor) && m_tabBar->count() == 1)
     {
@@ -847,6 +897,8 @@ void KNFileManager::removeEditorAndTab(int index)
     m_tabBar->removeTab(index);
     //Remove the editor.
     m_editorPanel->removeWidget(editor);
+    //Remove the editor from the switcher.
+    m_tabSwitcher->removeEditor(editor);
     //Disconnect all the editor connections.
     editor->removeAllLinks();
     //Recover the editor memory.
@@ -965,6 +1017,8 @@ bool KNFileManager::closeTabRange(int start, int length)
             {
                 return false;
             }
+            //Reduce the length for once at the editor is successfully closed.
+            --length;
         }
     }
     //If this is an empty new file and it is the last one, do not close.

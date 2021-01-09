@@ -157,7 +157,7 @@ private:
                               bool backward = false);
     QTextCursor performSearch(KNTextEditor *editor, const QTextCursor &tc,
                               QTextDocument::FindFlags flags);
-    QTextCursor cacheSearch(KNTextEditor *editor, const QTextCursor &tc,
+    QTextCursor cacheSearch(QTextDocument *editor, const QTextCursor &tc,
                             const SearchCache &cache,
                             QTextDocument::FindFlags flags);
     QTextDocument::FindFlags getOneWaySearchFlags();

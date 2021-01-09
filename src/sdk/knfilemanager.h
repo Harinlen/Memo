@@ -24,6 +24,7 @@ class KNSearchMenu;
 class KNViewMenu;
 class KNCodecMenu;
 class KNToolMenu;
+class KNTabSwitcher;
 class KNRecentFileRecorder;
 /*!
  * \brief The KNFileManager class is the major widget of the main window. It
@@ -170,6 +171,8 @@ public slots:
 
 private slots:
     void retranslate();
+    void onShowSwitcher();
+    void onShowEditor(KNTextEditor *editor);
     void onReloadCurrent();
     void onTabChange(int index);
     void onEditorTitleChange();
@@ -215,6 +218,7 @@ private:
     QAction *m_menuItems[MenuItemCount];
     KNTabBar *m_tabBar;
     QStackedWidget *m_editorPanel;
+    KNTabSwitcher *m_tabSwitcher;
 
     quint32 m_newCounter;
 };

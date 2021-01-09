@@ -12,12 +12,45 @@
  */
 #include <QKeyEvent>
 
+#include "kntabmodel.h"
+#include "knuimanager.h"
+
 #include "kntabswitcher.h"
 
 KNTabSwitcher::KNTabSwitcher(QWidget *parent) :
-    QListView(parent)
+    QListView(parent),
+    m_tabModel(new KNTabModel(this))
 {
+    setFixedWidth(knUi->width(870));
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setWindowFlag(Qt::ToolTip);
+    setModel(m_tabModel);
+    //When the item is clicked, also hide the list view.
+    connect(this, &KNTabSwitcher::clicked,
+            this, &KNTabSwitcher::hide);
+}
+
+void KNTabSwitcher::addEditor(KNTextEditor *editor)
+{
+    m_tabModel->addEditor(editor);
+}
+
+void KNTabSwitcher::removeEditor(KNTextEditor *editor)
+{
+    m_tabModel->removeEditor(editor);
+}
+
+void KNTabSwitcher::topEditor(KNTextEditor *editor)
+{
+    m_tabModel->moveEditorToTop(editor);
+}
+
+void KNTabSwitcher::hideEvent(QHideEvent *event)
+{
+    //When the switcher is hiding, show the current editor.
+    QListView::hideEvent(event);
+    //Extract the current editor.
+    emit requireShowEditor(m_tabModel->editorAt(currentIndex().row()));
 }
 
 void KNTabSwitcher::focusOutEvent(QFocusEvent *event)
@@ -27,6 +60,25 @@ void KNTabSwitcher::focusOutEvent(QFocusEvent *event)
     //Hide the widget.
     hide();
     parentWidget()->setFocus();
+}
+
+void KNTabSwitcher::keyPressEvent(QKeyEvent *event)
+{
+    //Check the key event.
+    switch(event->key())
+    {
+    case Qt::Key_Tab:
+    {
+        auto currentRow = currentIndex().row();
+        int nextRow = (currentRow == m_tabModel->rowCount() - 1) ?
+                    0 : currentRow + 1;
+        //Move to that row.
+        setCurrentIndex(m_tabModel->index(nextRow));
+        break;
+    }
+    }
+    //Construct the key event.
+    QListView::keyPressEvent(event);
 }
 
 void KNTabSwitcher::keyReleaseEvent(QKeyEvent *event)

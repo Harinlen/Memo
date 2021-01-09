@@ -95,6 +95,7 @@ HEADERS += \
     sdk/knglobal.h \
     sdk/kngotowindow.h \
     sdk/knhelpmenu.h \
+    sdk/knlanguagemodel.h \
     sdk/knlineedit.h \
     sdk/knlocalpeer.h \
     sdk/knlockedfile.h \
@@ -109,6 +110,7 @@ HEADERS += \
     sdk/knstatuslabel.h \
     sdk/knsyntaxhighlighter.h \
     sdk/kntabbar.h \
+    sdk/kntabmodel.h \
     sdk/kntabswitcher.h \
     sdk/kntextblockdata.h \
     sdk/kntexteditor.h \
@@ -137,6 +139,7 @@ SOURCES += \
     sdk/knglobal.cpp \
     sdk/kngotowindow.cpp \
     sdk/knhelpmenu.cpp \
+    sdk/knlanguagemodel.cpp \
     sdk/knlineedit.cpp \
     sdk/knlocalpeer.cpp \
     sdk/knlockedfile.cpp \
@@ -151,6 +154,7 @@ SOURCES += \
     sdk/knstatuslabel.cpp \
     sdk/knsyntaxhighlighter.cpp \
     sdk/kntabbar.cpp \
+    sdk/kntabmodel.cpp \
     sdk/kntabswitcher.cpp \
     sdk/kntexteditor.cpp \
     sdk/kntexteditorpanel.cpp \

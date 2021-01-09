@@ -15,6 +15,8 @@
 
 #include <QListView>
 
+class KNTabModel;
+class KNTextEditor;
 /*!
  * \brief The KNTabSwitcher class provides the listview of the switch board
  * widget.
@@ -23,18 +25,61 @@ class KNTabSwitcher : public QListView
 {
     Q_OBJECT
 public:
+    /*!
+     * \brief Construct a KNTabSwitcher widget.
+     * \param parent The parent widget.
+     */
     explicit KNTabSwitcher(QWidget *parent = nullptr);
 
 signals:
+    /*!
+     * \brief Require to show the editor.
+     * \param editor The editor pointer.
+     */
+    void requireShowEditor(KNTextEditor *editor);
+
+public slots:
+    /*!
+     * \brief Add an editor to the switching model.
+     * \param editor The editor pointer.
+     */
+    void addEditor(KNTextEditor *editor);
+
+    /*!
+     * \brief Remove the editor from the switching panel.
+     * \param editor The editor pointer.
+     */
+    void removeEditor(KNTextEditor *editor);
+
+    /*!
+     * \brief Move one editor to the top of the model.
+     * \param editor The editor pointer.
+     */
+    void topEditor(KNTextEditor *editor);
 
 protected:
     /*!
-     * \brief focusOutEvent
-     * \param event
+     * \brief Reimplemented from QListView::hideEvent().
+     */
+    void hideEvent(QHideEvent *event) override;
+
+    /*!
+     * \brief Reimplemented from QListView::focusOutEvent().
      */
     void focusOutEvent(QFocusEvent *event) override;
 
+    /*!
+     * \brief Reimplemented from QListView::keyPressEvent().
+     */
+    void keyPressEvent(QKeyEvent *event) override;
+
+    /*!
+     * \brief Reimplemented from QListView::keyReleaseEvent().
+     */
     void keyReleaseEvent(QKeyEvent *event) override;
+
+private:
+    KNTabModel *m_tabModel;
 };
 
 #endif // KNTABSWITCHER_H

@@ -4,7 +4,7 @@ Copyright (C) 2020 Kreogist Dev Team.
 
 ## Overview
 
-Memo is a Notepad++ replacement using Qt 6. It is aiming to provides the same usage experience as Notepad++ but only use native Qt 6 library for cross-platform supports.
+Memo is a Notepad++ replacement developed using Qt framework only. It is aiming to provides the same usage experience as Notepad++ but only use native Qt library for cross-platform supports.
 
 Tested platform:
 
@@ -18,6 +18,9 @@ Tested platform:
 
 - [ ] Complete the search function
 - [x] Quick search
+- [x] Tab switcher
+- [ ] Run menu
+- [ ] Window menu
 - [ ] Grammar modeling backend
 - [ ] Syntax highlight
 - [ ] Code folding
