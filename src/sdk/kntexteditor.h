@@ -280,6 +280,16 @@ public slots:
     void loadUseCodec(QTextCodec *codec);
 
     /*!
+     * \brief Load a specific file from file path to a constructed document.
+     * \param filePath The file path.
+     * \param codec The pointer to the target codec pointer.
+     * \param document The document pointer.
+     * \return If the document is successfully loaded, return true.
+     */
+    static bool loadToDocument(const QString &filePath, QTextCodec **codec,
+                               QTextDocument *document);
+
+    /*!
      * \brief Load the file to the current editor with a specific codec.
      * \param filePath The file path.
      * \param codec The codec pointer.

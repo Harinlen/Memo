@@ -29,6 +29,7 @@
 #include "kntexteditor.h"
 #include "knuimanager.h"
 #include "knfilemanager.h"
+#include "knfindprogress.h"
 
 #include "knfindwindow.h"
 
@@ -62,7 +63,9 @@ KNFindWindow::KNFindWindow(QWidget *parent) :
     m_transparent(new QGroupBox(this)),
     m_inSelection(new QCheckBox(this)),
     m_dotExtend(new QCheckBox(this)),
-    m_transparentEnable(new QCheckBox(m_transparent))
+    m_transparentEnable(new QCheckBox(m_transparent)),
+    m_engine(new KNFindEngine()),
+    m_progressWindow(new KNFindProgress(this))
 {
     //Configure the window.
     setFocusPolicy(Qt::ClickFocus);
@@ -193,12 +196,27 @@ KNFindWindow::KNFindWindow(QWidget *parent) :
     connect(m_buttons[ReplaceAll], &QPushButton::clicked, this, &KNFindWindow::onReplaceAll);
     connect(m_buttons[MarkAll], &QPushButton::clicked, this, &KNFindWindow::onMarkAll);
     connect(m_buttons[ClearMarks], &QPushButton::clicked, this, &KNFindWindow::onClearMarks);
+    //Link the search engine.
+    connect(this, &KNFindWindow::requireStartIn,
+            m_engine, &KNFindEngine::start, Qt::QueuedConnection);
+    connect(m_engine, &KNFindEngine::searching,
+            m_progressWindow, &KNFindProgress::setFilePath);
+    //Move engine to the other thread.
+    m_engine->moveToThread(&m_engineThread);
+    m_engineThread.start();
     //Set the default option.
     //!FIXME: Load from config.
     m_optionNormal->setChecked(true);
     m_transparentEnable->setChecked(true);
     m_transOnLose->setChecked(true);
     m_transValue->setValue(180);
+}
+
+KNFindWindow::~KNFindWindow()
+{
+    m_engineThread.quit();
+    m_engineThread.wait();
+    m_engine->deleteLater();
 }
 
 void KNFindWindow::showMode(int mode)
@@ -481,25 +499,44 @@ void KNFindWindow::onCount()
     auto searchCache = createSearchCache();
     //Start the first search.
     auto doc = editor->document();
-    tc = cacheSearch(doc, tc, searchCache, flags);
+    tc = KNFindEngine::cacheSearch(doc, tc, searchCache, flags);
     //Loop and search for the result.
     while(!tc.isNull())
     {
         //Search the next result.
         ++count;
         //Keep searching.
-        tc = cacheSearch(doc, tc, searchCache, flags);
+        tc = KNFindEngine::cacheSearch(doc, tc, searchCache, flags);
     }
     //Update the count result.
     m_message->setText(infoText(tr("Count: %1 match(es).").arg(
                                     QString::number(count))));
 }
 
+void KNFindWindow::onFindInCurrentDoc()
+{
+    //Fetch the current editor.
+    auto manager = static_cast<KNFileManager *>(parentWidget());
+    KNTextEditor *editor = manager->currentEditor();
+    if(!editor)
+    {
+        return;
+    }
+    //Clear the message box.
+    m_message->clear();
+    //Configure the search engine.
+    m_engine->setSearchCache(createSearchCache(),
+                             getOneWaySearchFlags());
+    //Now we have to start search.
+    emit requireStartIn();
+    //Show the working progress.
+    m_progressWindow->exec();
+}
+
 void KNFindWindow::onReplace()
 {
-    //Convert the find next.
-    auto manager = static_cast<KNFileManager *>(parentWidget());
     //Fetch the current editor.
+    auto manager = static_cast<KNFileManager *>(parentWidget());
     KNTextEditor *editor = manager->currentEditor();
     if(!editor)
     {
@@ -548,7 +585,7 @@ void KNFindWindow::onReplaceAll()
     QTextDocument::FindFlags flags = getOneWaySearchFlags();
     const QString &replaceText = m_replaceText->currentText();
     auto doc = editor->document();
-    tc = cacheSearch(doc, tc, searchCache, flags);
+    tc = KNFindEngine::cacheSearch(doc, tc, searchCache, flags);
     while(!tc.isNull())
     {
         //Replace the text.
@@ -557,7 +594,7 @@ void KNFindWindow::onReplaceAll()
         //Increase the count.
         ++count;
         //Preform the next search.
-        tc = cacheSearch(doc, tc, searchCache, flags);
+        tc = KNFindEngine::cacheSearch(doc, tc, searchCache, flags);
     }
     rawPos.endEditBlock();
     //Move back to the position.
@@ -694,24 +731,26 @@ bool KNFindWindow::cursorMatches(const QTextCursor &tc, Qt::CaseSensitivity cs)
     return selectionText.compare(searchCache.keywords, cs) == 0;
 }
 
-KNFindWindow::SearchCache KNFindWindow::createSearchCache()
+KNFindEngine::SearchCache KNFindWindow::createSearchCache()
 {
-    SearchCache cache;
+    KNFindEngine::SearchCache cache;
+    //Save the keywords.
+    cache.rawKeyword = m_findText->currentText();
+    cache.keywords = cache.rawKeyword;
+    //Check the search options.
     if(m_optionNormal->isChecked())
     {
-        cache.keywords = m_findText->currentText();
         cache.useReg = false;
         cache.multiLine = false;
     }
     else if(m_optionExtend->isChecked())
     {
-        cache.keywords = m_findText->currentText();
+        cache.useReg = false;
         //Replace the keywords.
         cache.keywords.replace("\\n", "\n");
         cache.keywords.replace("\\r", "\r");
         cache.keywords.replace("\\t", "\t");
         cache.keywords.replace("\\0", "\0");
-        cache.useReg = false;
         //Check multilines.
         if(cache.keywords.contains('\n'))
         {
@@ -733,7 +772,7 @@ KNFindWindow::SearchCache KNFindWindow::createSearchCache()
         //Enable regular expression.
         cache.useReg = true;
         //Construct the entire regular expression.
-        cache.regExp = getRegExp(m_findText->currentText());
+        cache.regExp = getRegExp(cache.keywords);
         //Check the multiple line supports.
         if(m_findText->currentText().contains("\\n"))
         {
@@ -773,159 +812,7 @@ QTextCursor KNFindWindow::performSearch(KNTextEditor *editor,
                                         const QTextCursor &tc,
                                         QTextDocument::FindFlags flags)
 {
-    return cacheSearch(editor->document(), tc, createSearchCache(), flags);
-}
-
-QTextBlock matchLines(QTextBlock block, const QStringList &lines,
-                      Qt::CaseSensitivity cs)
-{
-    int lineId = 0;
-    while(lineId < lines.size())
-    {
-        //Check block validation and text matched.
-        if(!block.isValid() || !block.text().compare(lines.at(lineId), cs))
-        {
-            return QTextBlock();
-        }
-        //Switch to next block and line.
-        block = block.next();
-        ++lineId;
-    }
-    return block;
-}
-
-int regMatchFirst(const QString &source, const QRegularExpression &exp)
-{
-    //Match the exp from the end of the block.
-    QRegularExpressionMatch match;
-    int result = source.indexOf(exp, 0, &match);
-    if(result == -1)
-    {
-        return -1;
-    }
-    //Check the result.
-    return (match.capturedStart() == 0) ?
-              match.capturedEnd() : -1;
-}
-
-int regMatchLast(const QString &source, const QRegularExpression &exp)
-{
-    //Match the exp from the end of the block.
-    QRegularExpressionMatch match;
-    int result = source.lastIndexOf(exp, -1, &match);
-    if(result == -1)
-    {
-        return -1;
-    }
-    //Check the result.
-    return (match.capturedEnd() == source.length()) ?
-              match.capturedStart() : -1;
-}
-
-QTextBlock regMatchLines(QTextBlock block, const QVector<QRegularExpression> &exps)
-{
-    int lineId = 0;
-    while(lineId < exps.size())
-    {
-        //Check block validation and exp matched.
-        if(!block.isValid())
-        {
-            return QTextBlock();
-        }
-        //Use the regular expression to match the string.
-        const QString &blockText = block.text();
-        auto match = exps.at(lineId).match(blockText);
-        //Must match the entire string.
-        if(!match.isValid() || match.capturedStart() != 0 ||
-                match.capturedEnd() != blockText.length())
-        {
-            return QTextBlock();
-        }
-        //Keep moving.
-        block = block.next();
-        ++lineId;
-    }
-    return block;
-}
-
-QTextCursor KNFindWindow::cacheSearch(QTextDocument *doc,
-                                      const QTextCursor &tc,
-                                      const KNFindWindow::SearchCache &cache,
-                                      QTextDocument::FindFlags flags)
-{
-    //Check the cache regular expression settings.
-    if(cache.useReg)
-    {
-        if(cache.multiLine)
-        {
-            //Search for the first line.
-            QTextBlock block = tc.block();
-            while(block.isValid())
-            {
-                int firstMatch = regMatchLast(block.text(), cache.regExpFirst);
-                if(firstMatch != -1)
-                {
-                    //Perform the mid-level search.
-                    QTextBlock lastBlock = regMatchLines(block.next(), cache.regExpLines);
-                    if(lastBlock.isValid())
-                    {
-                        // Match the last line.
-                        int lastMatch = regMatchFirst(lastBlock.text(), cache.regExpLast);
-                        if(lastMatch != -1)
-                        {
-                            //Now construct the position.
-                            auto resultCursor = tc;
-                            resultCursor.setPosition(block.position() + firstMatch);
-                            resultCursor.setPosition(lastBlock.position() + lastMatch,
-                                                     QTextCursor::KeepAnchor);
-                            return resultCursor;
-                        }
-                    }
-                }
-                block = block.next();
-            }
-            return QTextCursor();
-        }
-        return doc->find(cache.regExp, tc, flags);
-    }
-    //Perform normal search.
-    if(cache.multiLine)
-    {
-        auto cs = (flags & QTextDocument::FindCaseSensitively) ?
-                    Qt::CaseSensitive : Qt::CaseInsensitive;
-        //Search for the first line.
-        QTextBlock block = tc.block();
-        while(block.isValid())
-        {
-            QString text = block.text();
-            //Search at the end of the block.
-            if(text.endsWith(cache.keywordLineFirst, cs))
-            {
-                //Matches mid-level lines.
-                QTextBlock lastBlock = matchLines(block.next(), cache.keywordLineMid, cs);
-                //Check the mid block result and matches the last block.
-                if(lastBlock.isValid() &&
-                        lastBlock.text().startsWith(cache.keywordLineLast, cs))
-                {
-                    //Now construct the position.
-                    auto resultCursor = tc;
-                    resultCursor.setPosition(block.position() +
-                                             text.length() -
-                                             cache.keywordLineFirst.length());
-                    //Set the selection.
-                    resultCursor.movePosition(QTextCursor::NextCharacter,
-                                              QTextCursor::KeepAnchor,
-                                              cache.keywords.length());
-                    return resultCursor;
-                }
-            }
-            block = block.next();
-        }
-        //If goes here, then no need to find.
-        return QTextCursor();
-    }
-    //Do normal single line search.
-    return doc->find(cache.keywords, tc, flags);
+    return KNFindEngine::cacheSearch(editor->document(), tc, createSearchCache(), flags);
 }
 
 QTextDocument::FindFlags KNFindWindow::getOneWaySearchFlags()

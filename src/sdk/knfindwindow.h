@@ -13,9 +13,9 @@
 #ifndef KNFINDWINDOW_H
 #define KNFINDWINDOW_H
 
-#include <QRegularExpression>
-#include <QTextCursor>
-#include <QTextDocument>
+#include <QThread>
+
+#include "knfindengine.h"
 
 #include <QDialog>
 
@@ -30,6 +30,7 @@ class QSlider;
 class QBoxLayout;
 class KNTextEditor;
 class KNConfigure;
+class KNFindProgress;
 /*!
  * \brief The KNFindWindow class provides the find dialog.
  */
@@ -51,8 +52,10 @@ public:
      * \param parent The parent widget.
      */
     explicit KNFindWindow(QWidget *parent = nullptr);
+    ~KNFindWindow();
 
 signals:
+    void requireStartIn(QString filter);
 
 public slots:
     /*!
@@ -99,6 +102,7 @@ private slots:
     void onTabChanged(int tabIndex);
     void onFindNext();
     void onCount();
+    void onFindInCurrentDoc();
     void onReplace();
     void onReplaceAll();
     void onMarkAll();
@@ -140,25 +144,15 @@ private:
     };
     void searchNext(bool revserse);
     inline QComboBox *generateBox();
-    struct SearchCache
-    {
-        bool useReg;
-        bool multiLine;
-        QString keywords;
-        QString keywordLineFirst, keywordLineLast;
-        QStringList keywordLineMid;
-        QRegularExpression regExp;
-        QRegularExpression regExpFirst, regExpLast;
-        QVector<QRegularExpression> regExpLines;
-    };
+
     bool cursorMatches(const QTextCursor &tc, Qt::CaseSensitivity cs);
-    SearchCache createSearchCache();
+    KNFindEngine::SearchCache createSearchCache();
     QTextCursor performSearch(KNTextEditor *editor, const QTextCursor &tc,
                               bool backward = false);
     QTextCursor performSearch(KNTextEditor *editor, const QTextCursor &tc,
                               QTextDocument::FindFlags flags);
-    QTextCursor cacheSearch(QTextDocument *editor, const QTextCursor &tc,
-                            const SearchCache &cache,
+    static QTextCursor cacheSearch(QTextDocument *editor, const QTextCursor &tc,
+                            const KNFindEngine::SearchCache &cache,
                             QTextDocument::FindFlags flags);
     QTextDocument::FindFlags getOneWaySearchFlags();
     QTextDocument::FindFlags getSearchFlags(bool backward);
@@ -182,6 +176,10 @@ private:
     QCheckBox *m_inSelection, *m_dotExtend, *m_transparentEnable,
               *m_matchOption[MatchOptionCount];
     QPushButton *m_buttons[ButtonCount];
+
+    QThread m_engineThread;
+    KNFindEngine *m_engine;
+    KNFindProgress *m_progressWindow;
 };
 
 #endif // KNFINDWINDOW_H

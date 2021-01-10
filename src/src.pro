@@ -91,6 +91,8 @@ HEADERS += \
     sdk/kndocumentlayout.h \
     sdk/kneditmenu.h \
     sdk/knfilemanager.h \
+    sdk/knfindengine.h \
+    sdk/knfindprogress.h \
     sdk/knfindwindow.h \
     sdk/knglobal.h \
     sdk/kngotowindow.h \
@@ -135,6 +137,8 @@ SOURCES += \
     sdk/kndocumentlayout.cpp \
     sdk/kneditmenu.cpp \
     sdk/knfilemanager.cpp \
+    sdk/knfindengine.cpp \
+    sdk/knfindprogress.cpp \
     sdk/knfindwindow.cpp \
     sdk/knglobal.cpp \
     sdk/kngotowindow.cpp \

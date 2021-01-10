@@ -1378,11 +1378,40 @@ void KNTextEditor::loadUseCodec(QTextCodec *codec)
     loadFrom(m_filePath, codec);
 }
 
-void KNTextEditor::loadFrom(const QString &filePath, QTextCodec *codec)
+bool KNTextEditor::loadToDocument(const QString &filePath,
+                                  QTextCodec **codec,
+                                  QTextDocument *document)
 {
     //Read the file.
     QFile targetFile(filePath);
     if(!targetFile.open(QIODevice::ReadOnly))
+    {
+        return false;
+    }
+    //Use codec to decode the file.
+    QByteArray &&fileContent = targetFile.readAll();
+    targetFile.close();
+    //Decode the file from the codec.
+    QString fileText;
+    if(*codec)
+    {
+        //Use the specific codec to load the file.
+        fileText = (*codec)->toUnicode(fileContent);
+    }
+    else
+    {
+        //Smart decode.
+        *codec = KNTextEditor::codecFromData(fileContent, &fileText);
+    }
+    //Set the file text to document.
+    document->setPlainText(fileText);
+    return true;
+}
+
+void KNTextEditor::loadFrom(const QString &filePath, QTextCodec *codec)
+{
+    //Read the file.
+    if(!loadToDocument(filePath, &codec, document()))
     {
         QMessageBox::information(
                     this,
@@ -1390,22 +1419,6 @@ void KNTextEditor::loadFrom(const QString &filePath, QTextCodec *codec)
                     tr("Please check if this file is opened in another program."));
         return;
     }
-    //Use codec to decode the file.
-    QByteArray &&fileContent = targetFile.readAll();
-    targetFile.close();
-    //Decode the file from the codec.
-    QString fileText;
-    if(codec == nullptr)
-    {
-        //Smart decode.
-        codec = codecFromData(fileContent, &fileText);
-    }
-    else
-    {
-        fileText = codec->toUnicode(fileContent);
-    }
-    //Set the file text to document.
-    document()->setPlainText(fileText);
     //Set the codec name.
     setCodecName(codec->name());
     //Set the file path.
