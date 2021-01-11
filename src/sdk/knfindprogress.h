@@ -24,6 +24,7 @@ public:
     explicit KNFindProgress(QWidget *parent = nullptr);
 
 signals:
+    void quitSearch();
 
 public slots:
     void setMaxCount(int count);

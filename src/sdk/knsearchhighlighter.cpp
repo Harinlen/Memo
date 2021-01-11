@@ -18,12 +18,12 @@ KNSearchHighlighter::KNSearchHighlighter(QObject *parent) :
     KNSyntaxHighlighter(parent)
 {
     //Configure the result format.
-    m_resultFormat.setBackground(QColor(232, 232, 255));
+//    m_resultFormat.setBackground(QColor(232, 232, 255));
     m_resultFormat.setForeground(QColor(39, 39, 149));
     m_resultFormat.setFontWeight(QFont::Bold);
     m_resultFormat.setProperty(QTextFormat::FullWidthSelection, true);
     //Configure the path format.
-    m_fileFormat.setBackground(QColor(213, 255, 213));
+//    m_fileFormat.setBackground(QColor(213, 255, 213));
     m_fileFormat.setForeground(QColor(107, 149, 0));
     m_fileFormat.setFontWeight(QFont::Bold);
     m_fileFormat.setProperty(QTextFormat::FullWidthSelection, true);

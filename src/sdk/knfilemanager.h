@@ -118,6 +118,12 @@ public:
     KNTextEditor *currentEditor() const;
 
     /*!
+     * \brief Get all the editor pointers.
+     * \return The editor pointer list.
+     */
+    QVector<KNTextEditor *> allEditors() const;
+
+    /*!
      * \brief Get the editor at a specific index.
      * \param index The editor id.
      * \return The editor pointer.

@@ -30,6 +30,7 @@ class QSlider;
 class QBoxLayout;
 class KNTextEditor;
 class KNConfigure;
+class KNSearchResult;
 class KNFindProgress;
 /*!
  * \brief The KNFindWindow class provides the find dialog.
@@ -51,11 +52,12 @@ public:
      * \brief Construct a KNFindWindow dialog.
      * \param parent The parent widget.
      */
-    explicit KNFindWindow(QWidget *parent = nullptr);
+    explicit KNFindWindow(KNSearchResult *result,
+                          QWidget *parent = nullptr);
     ~KNFindWindow();
 
 signals:
-    void requireStartIn(QString filter);
+    void requireStartSearch();
 
 public slots:
     /*!
@@ -103,10 +105,12 @@ private slots:
     void onFindNext();
     void onCount();
     void onFindInCurrentDoc();
+    void onFindInAllDoc();
     void onReplace();
     void onReplaceAll();
     void onMarkAll();
     void onClearMarks();
+    void onCancelSearchEngine();
 
 private:
     enum Buttons
@@ -180,6 +184,7 @@ private:
     QThread m_engineThread;
     KNFindEngine *m_engine;
     KNFindProgress *m_progressWindow;
+    KNSearchResult *m_resultWindow;
 };
 
 #endif // KNFINDWINDOW_H

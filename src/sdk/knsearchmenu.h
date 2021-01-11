@@ -20,6 +20,7 @@ class KNFindWindow;
 class KNTextEditor;
 class KNGotoWindow;
 class KNSearchBar;
+class KNSearchResult;
 /*!
  * \brief The KNSearchMenu class provides the search menu among the tab manager.
  */
@@ -118,10 +119,10 @@ private:
         SearchSubMenuCount
     };
 
+    KNSearchResult *m_searchResult;
     KNFindWindow *m_searchWindow;
     KNGotoWindow *m_gotoWindow;
     KNSearchBar *m_searchBar;
-    QDockWidget *m_searchResult;
     KNTextEditor *m_editor;
     QAction *m_menuItems[SearchMenuItemCount];
     QMenu *m_subMenus[SearchSubMenuCount];

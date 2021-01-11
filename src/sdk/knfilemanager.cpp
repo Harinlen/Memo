@@ -600,6 +600,19 @@ KNTextEditor *KNFileManager::currentEditor() const
     return editorAt(m_tabBar->currentIndex());
 }
 
+QVector<KNTextEditor *> KNFileManager::allEditors() const
+{
+    //Construct the editor the list.
+    QVector<KNTextEditor *> editors;
+    editors.reserve(m_editorPanel->count());
+    //Append the editor to the list.
+    for(int i=0; i<m_editorPanel->count(); ++i)
+    {
+        editors.append(editorAt(i));
+    }
+    return editors;
+}
+
 KNTextEditor *KNFileManager::editorAt(int index) const
 {
     return static_cast<KNTextEditor *>(m_editorPanel->widget(index));

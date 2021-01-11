@@ -27,10 +27,10 @@
 #include "knsearchmenu.h"
 
 KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
-    m_searchWindow(new KNFindWindow(parent)),
+    m_searchResult(new KNSearchResult(parentWidget())),
+    m_searchWindow(new KNFindWindow(m_searchResult, parent)),
     m_gotoWindow(new KNGotoWindow(parent)),
     m_searchBar(new KNSearchBar(parent)),
-    m_searchResult(new KNSearchResult(parentWidget())),
     m_editor(nullptr)
 {
     //Construct actions and items.

@@ -51,17 +51,29 @@ public:
 
     KNSearchResult::SearchResult result() const;
 
+    void setSearchEditors(QVector<KNTextEditor *> editors);
+    void setSearchFilters(QString filter);
+
+    void stopSearch();
+
 signals:
     void searchBreak();
     void searchComplete();
+    void searchCountChange(int count);
     void searching(int i, QString filePath);
 
 public slots:
-    void start(const QString &filter);
+    void start();
 
 private:
+    inline int taskCounts() const;
+    inline QTextDocument *taskAt(int taskId);
+    inline void taskFree();
     QMutex m_quitLock;
-    bool m_quit;
+    QVector<QTextDocument *> m_documents;
+    QStringList m_files;
+    QTextDocument *m_fileDocumentBuf;
+    bool m_quit, m_useDocument;
     SearchCache m_cache;
     KNSearchResult::SearchResult m_result;
     quint64 m_counter;

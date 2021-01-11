@@ -30,6 +30,7 @@
 #include "knuimanager.h"
 #include "knfilemanager.h"
 #include "knfindprogress.h"
+#include "knsearchresult.h"
 
 #include "knfindwindow.h"
 
@@ -43,7 +44,7 @@ QString infoText(const QString &content)
     return QString("<font color=\"blue\">%1</font>").arg(content);
 }
 
-KNFindWindow::KNFindWindow(QWidget *parent) :
+KNFindWindow::KNFindWindow(KNSearchResult *result, QWidget *parent) :
     QDialog(parent),
     m_config(knConf->userConfigure()->getConfigure("FindDialog")),
     m_layout(new QGridLayout()),
@@ -65,7 +66,8 @@ KNFindWindow::KNFindWindow(QWidget *parent) :
     m_dotExtend(new QCheckBox(this)),
     m_transparentEnable(new QCheckBox(m_transparent)),
     m_engine(new KNFindEngine()),
-    m_progressWindow(new KNFindProgress(this))
+    m_progressWindow(new KNFindProgress(this)),
+    m_resultWindow(result)
 {
     //Configure the window.
     setFocusPolicy(Qt::ClickFocus);
@@ -191,16 +193,26 @@ KNFindWindow::KNFindWindow(QWidget *parent) :
     //Link buttons.
     connect(m_buttons[FindNext], &QPushButton::clicked, this, &KNFindWindow::onFindNext);
     connect(m_buttons[Count], &QPushButton::clicked, this, &KNFindWindow::onCount);
+    connect(m_buttons[FindAll], &QPushButton::clicked, this, &KNFindWindow::onFindInCurrentDoc);
+    connect(m_buttons[FindAllOpen], &QPushButton::clicked, this, &KNFindWindow::onFindInAllDoc);
     connect(m_buttons[Close], &QPushButton::clicked, this, &KNFindWindow::close);
     connect(m_buttons[Replace], &QPushButton::clicked, this, &KNFindWindow::onReplace);
     connect(m_buttons[ReplaceAll], &QPushButton::clicked, this, &KNFindWindow::onReplaceAll);
     connect(m_buttons[MarkAll], &QPushButton::clicked, this, &KNFindWindow::onMarkAll);
     connect(m_buttons[ClearMarks], &QPushButton::clicked, this, &KNFindWindow::onClearMarks);
     //Link the search engine.
-    connect(this, &KNFindWindow::requireStartIn,
+    connect(m_progressWindow, &KNFindProgress::quitSearch,
+            this, &KNFindWindow::onCancelSearchEngine);
+    connect(this, &KNFindWindow::requireStartSearch,
             m_engine, &KNFindEngine::start, Qt::QueuedConnection);
+    connect(m_engine, &KNFindEngine::searchBreak,
+            m_progressWindow, &KNFindProgress::close, Qt::QueuedConnection);
     connect(m_engine, &KNFindEngine::searching,
-            m_progressWindow, &KNFindProgress::setFilePath);
+            m_progressWindow, &KNFindProgress::setFilePath, Qt::QueuedConnection);
+    connect(m_engine, &KNFindEngine::searchCountChange,
+            m_progressWindow, &KNFindProgress::setMaxCount, Qt::QueuedConnection);
+//    connect(m_engine, &KNFindEngine::searchComplete,
+//            m_progressWindow, &KNFindProgress::close, Qt::QueuedConnection);
     //Move engine to the other thread.
     m_engine->moveToThread(&m_engineThread);
     m_engineThread.start();
@@ -527,10 +539,37 @@ void KNFindWindow::onFindInCurrentDoc()
     //Configure the search engine.
     m_engine->setSearchCache(createSearchCache(),
                              getOneWaySearchFlags());
+    //Now set the current editor as the task.
+    QVector<KNTextEditor *> editors;
+    editors.append(editor);
+    m_engine->setSearchEditors(editors);
     //Now we have to start search.
-    emit requireStartIn();
+    emit requireStartSearch();
     //Show the working progress.
     m_progressWindow->exec();
+    //Append the result to search result.
+    m_resultWindow->addResult(m_engine->result());
+}
+
+void KNFindWindow::onFindInAllDoc()
+{
+    //Fetch the current manager.
+    auto manager = static_cast<KNFileManager *>(parentWidget());
+    //Clear the message box.
+    m_message->clear();
+    //Configure the search engine.
+    m_engine->setSearchCache(createSearchCache(),
+                             getOneWaySearchFlags());
+    //Extract the editors.
+    auto editors = manager->allEditors();
+    //Set the engine to the editors.
+    m_engine->setSearchEditors(editors);
+    //Now we start the search.
+    emit requireStartSearch();
+    //Show the working progress.
+    m_progressWindow->exec();
+    //Append the result to search result.
+    m_resultWindow->addResult(m_engine->result());
 }
 
 void KNFindWindow::onReplace()
@@ -611,6 +650,12 @@ void KNFindWindow::onMarkAll()
 
 void KNFindWindow::onClearMarks()
 {
+}
+
+void KNFindWindow::onCancelSearchEngine()
+{
+    //Quit the search.
+    m_engine->stopSearch();
 }
 
 void KNFindWindow::findNext()

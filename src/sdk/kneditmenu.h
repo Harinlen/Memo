@@ -181,7 +181,7 @@ private:
 
     QVector<QMetaObject::Connection> m_connects;
     KNTextEditor *m_editor;
-    QDockWidget *m_charPanel;
+    QDockWidget *m_charPanel, *m_clipboardPanel;
 };
 
 #endif // KNEDITMENU_H

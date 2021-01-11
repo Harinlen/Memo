@@ -27,7 +27,9 @@ class KNSearchResult : public QDockWidget
 public:
     struct ItemResult
     {
-        int pos;
+        QString slice;
+        int row;
+        int posInRow;
         int length;
     };
 
@@ -52,7 +54,7 @@ public:
 signals:
 
 public slots:
-    void addResult();
+    void addResult(const SearchResult &result);
 
 private slots:
     void retranslate();

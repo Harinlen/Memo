@@ -18,7 +18,10 @@
 
 #include "knfindengine.h"
 
-KNFindEngine::KNFindEngine(QObject *parent) : QObject(parent)
+KNFindEngine::KNFindEngine(QObject *parent) : QObject(parent),
+    m_fileDocumentBuf(nullptr),
+    m_quit(false),
+    m_useDocument(false)
 {
 }
 
@@ -174,12 +177,7 @@ QTextCursor KNFindEngine::cacheSearch(QTextDocument *doc,
     return doc->find(cache.keywords, tc, flags);
 }
 
-QStringList extractFilePaths(const QString &filter)
-{
-    return QStringList();
-}
-
-void KNFindEngine::start(const QString &filter)
+void KNFindEngine::start()
 {
     //Configure the quit variable.
     m_quitLock.lock();
@@ -190,43 +188,25 @@ void KNFindEngine::start(const QString &filter)
     m_counter = 0;
     //Set the result keyword.
     m_result.keyword = m_cache.keywords;
-    //Construct the codec and document.
-    QTextCodec *codec;
-    QTextDocument *document = new QTextDocument();
-    //Construct the file paths.
-    QStringList filePaths;
-    QFileInfo targetInfo(filter);
-    //Set the target info to the file paths.
-    if(targetInfo.isFile())
-    {
-        filePaths.append(targetInfo.absoluteFilePath());
-    }
-    else
-    {
-        //Check whether it has filter.
-        filePaths = extractFilePaths(filter);
-    }
-    //Start search in the file.
-    for(int i=0; i<filePaths.size(); ++i)
+    //Start search in the files.
+    for(int i=0; i<taskCounts(); ++i)
     {
         m_quitLock.lock();
         if(m_quit)
         {
             m_quitLock.unlock();
             //Clear the document.
-            delete document;
+            taskFree();
             //Break.
             emit searchBreak();
             return;
         }
         m_quitLock.unlock();
         //Emit the signal.
-        const QString &filePath = filePaths.at(i);
-        emit searching(i, filePath);
-        //Clear the codec.
-        codec = nullptr;
-        //Load the file to the document.
-        if(!KNTextEditor::loadToDocument(filePath, &codec, document))
+        emit searching(i, m_files.at(i));
+        //Fetch the document.
+        auto document = taskAt(i);
+        if(!document)
         {
             continue;
         }
@@ -243,7 +223,8 @@ void KNFindEngine::start(const QString &filter)
             //Construct the result item.
             KNSearchResult::ItemResult itemResult;
             //Append the result.
-            itemResult.pos = tc.selectionStart();
+            itemResult.row = tc.blockNumber();
+            itemResult.posInRow = tc.positionInBlock();
             itemResult.length = tc.selectionEnd() - tc.selectionStart();
             fileResult.items.append(itemResult);
             //Check quit request.
@@ -252,7 +233,7 @@ void KNFindEngine::start(const QString &filter)
             {
                 m_quitLock.unlock();
                 //Clear the document.
-                delete document;
+                taskFree();
                 //Break.
                 emit searchBreak();
                 return;
@@ -262,14 +243,53 @@ void KNFindEngine::start(const QString &filter)
             tc = cacheSearch(document, tc, m_cache, m_flags);
         }
         //Append the item result to final result.
-        fileResult.path = filePath;
+        fileResult.path = m_files.at(i);
         m_result.results.append(fileResult);
         //Increase the counter.
         ++m_counter;
     }
-    delete document;
+    taskFree();
     //Emit the searching complete.
     emit searchComplete();
+}
+
+inline int KNFindEngine::taskCounts() const
+{
+    return m_useDocument ? m_documents.size() : m_files.size();
+}
+
+QTextDocument *KNFindEngine::taskAt(int taskId)
+{
+    //If using document mode, directly return the document.
+    if(m_useDocument)
+    {
+        return m_documents.at(taskId);
+    }
+    //Or else we have to construct the document.
+    if(!m_fileDocumentBuf)
+    {
+        //Create a new text document buffer for document.
+        m_fileDocumentBuf = new QTextDocument();
+    }
+    //Load the file to the buffer.
+    QTextCodec *codec;
+    if(KNTextEditor::loadToDocument(m_files.at(taskId), &codec,
+                                    m_fileDocumentBuf))
+    {
+        return m_fileDocumentBuf;
+    }
+    //Or else, just ignore the buffer.
+    return nullptr;
+}
+
+void KNFindEngine::taskFree()
+{
+    //Only have to free when using file mode.
+    if(!m_useDocument)
+    {
+        //Free the document buf.
+        delete m_fileDocumentBuf;
+    }
 }
 
 void KNFindEngine::setSearchCache(const KNFindEngine::SearchCache &cache,
@@ -282,4 +302,51 @@ void KNFindEngine::setSearchCache(const KNFindEngine::SearchCache &cache,
 KNSearchResult::SearchResult KNFindEngine::result() const
 {
     return m_result;
+}
+
+void KNFindEngine::setSearchEditors(QVector<KNTextEditor *> editors)
+{
+    m_documents.clear();
+    m_files.clear();
+    //Save the documents.
+    for(auto editor : editors)
+    {
+        m_documents.append(editor->document());
+        //Check whether the editor is on disk.
+        m_files.append(editor->isOnDisk() ? editor->filePath() :
+                                            editor->documentTitle());
+    }
+    //Emit the signals.
+    emit searchCountChange(m_files.size());
+    //Configure the document file.
+    m_useDocument = true;
+}
+
+void KNFindEngine::setSearchFilters(QString filter)
+{
+    //Construct the filter files.
+    QFileInfo targetInfo(filter);
+    //Set the target info to the file paths.
+    if(targetInfo.isFile())
+    {
+        m_files.append(targetInfo.absoluteFilePath());
+    }
+    else
+    {
+        //Check whether it has filter.
+        //!FIXME: Add codes here.
+        m_files = QStringList();
+    }
+    //Emit the signals.
+    emit searchCountChange(m_files.size());
+    //Disable use document mode.
+    m_useDocument = false;
+}
+
+void KNFindEngine::stopSearch()
+{
+    //Set the quit flag.
+    m_quitLock.lock();
+    m_quit = true;
+    m_quitLock.unlock();
 }

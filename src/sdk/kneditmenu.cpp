@@ -26,12 +26,14 @@
 #include "knuimanager.h"
 #include "kncharpanel.h"
 #include "knmainwindow.h"
+#include "knclipboardhistory.h"
 
 #include "kneditmenu.h"
 
 KNEditMenu::KNEditMenu(QWidget *parent) : QMenu(parent),
     m_editor(nullptr),
-    m_charPanel(new QDockWidget(this))
+    m_charPanel(new QDockWidget(this)),
+    m_clipboardPanel(new KNClipboardHistory(this))
 {
     //Link the clipboard check.
     connect(QApplication::clipboard(), &QClipboard::dataChanged,
@@ -52,6 +54,7 @@ KNEditMenu::KNEditMenu(QWidget *parent) : QMenu(parent),
             this, &KNEditMenu::onInsertText);
     m_charPanel->setWidget(panel);
     knGlobal->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, m_charPanel);
+    knGlobal->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, m_clipboardPanel);
     m_charPanel->close();
     //Set icons.
     m_menuItems[Undo]->setIcon(QIcon(":/icons/undo.png"));

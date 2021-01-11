@@ -28,27 +28,40 @@ KNSearchResult::KNSearchResult(QWidget *parent) :
     m_editor->setLineNumberVisible(false);
     m_editor->setBookmarkVisible(false);
     m_editor->setHighlightCursor(false);
+    m_editor->setWordWrapMode(QTextOption::NoWrap);
     m_editor->setFont(knGlobal->editorPresetFont());
     setWidget(m_editor);
-    //Disconnect from the file manager.
 
     //Link the translator.
     knUi->addTranslate(this, &KNSearchResult::retranslate);
-    //Add one result.
-    addResult();
 }
 
-void KNSearchResult::addResult()
+void KNSearchResult::addResult(const SearchResult &result)
 {
-    //Append the title of the text.
-    for(int i=0; i<3; ++i)
+    //Construct the search result.
+    QStringList resultBuffer;
+    resultBuffer.append(result.keyword);
+    for(int i=0; i<result.results.size(); ++i)
     {
-        m_editor->appendPlainText(
-                    "Search 'bool' (5 hits in 1 file of 1 searched)\n"
-                "  C:/Users/a.txt (5 hits)\n"
-                "    Line 1: asdfasdf\n"
-                "    Line 2: qowieuroqiewu");
+        QStringList fileBuffer;
+        auto fileItems = result.results.at(i).items;
+        fileBuffer.reserve(fileItems.size() + 1);
+        //Append the title.
+        fileBuffer.append(QString("  %1 (%2)").arg(
+                              result.results.at(i).path,
+                              QString::number(fileItems.size())));
+        //Construct the file result.
+        for(int j=0; j<fileItems.size(); ++j)
+        {
+            auto item = fileItems.at(j);
+            //Insert to file buffer.
+            fileBuffer.append(QString("    %1: %2").arg(
+                                  QString::number(item.row),
+                                  QString::number(item.posInRow)));
+        }
+        resultBuffer.append(fileBuffer.join("\n"));
     }
+    m_editor->appendPlainText(resultBuffer.join("\n"));
 }
 
 void KNSearchResult::retranslate()
