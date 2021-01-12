@@ -27,7 +27,7 @@ Tested platform:
 - [ ] Tab indent display
 - [ ] Session support
 - [ ] Workspace support
-- [ ] Codec dialog
+- [x] Codec dialog
 
 ## License
 

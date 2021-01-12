@@ -84,6 +84,7 @@ RESOURCES += \
 
 HEADERS += \
     sdk/kncharpanel.h \
+    sdk/knclipboardhistory.h \
     sdk/kncodecdialog.h \
     sdk/kncodecmenu.h \
     sdk/knconfigure.h \
@@ -107,6 +108,7 @@ HEADERS += \
     sdk/knsearchhighlighter.h \
     sdk/knsearchmenu.h \
     sdk/knsearchresult.h \
+    sdk/knsearchresulteditor.h \
     sdk/knsingletonapplication.h \
     sdk/knstatusbar.h \
     sdk/knstatuslabel.h \
@@ -130,6 +132,7 @@ HEADERS += \
 SOURCES += \
     main.cpp \
     sdk/kncharpanel.cpp \
+    sdk/knclipboardhistory.cpp \
     sdk/kncodecdialog.cpp \
     sdk/kncodecmenu.cpp \
     sdk/knconfigure.cpp \
@@ -153,6 +156,7 @@ SOURCES += \
     sdk/knsearchhighlighter.cpp \
     sdk/knsearchmenu.cpp \
     sdk/knsearchresult.cpp \
+    sdk/knsearchresulteditor.cpp \
     sdk/knsingletonapplication.cpp \
     sdk/knstatusbar.cpp \
     sdk/knstatuslabel.cpp \

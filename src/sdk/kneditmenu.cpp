@@ -54,8 +54,13 @@ KNEditMenu::KNEditMenu(QWidget *parent) : QMenu(parent),
             this, &KNEditMenu::onInsertText);
     m_charPanel->setWidget(panel);
     knGlobal->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, m_charPanel);
+    connect(m_clipboardPanel, &KNClipboardHistory::requireInsert,
+            this, &KNEditMenu::onInsertText);
     knGlobal->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, m_clipboardPanel);
     m_charPanel->close();
+    m_clipboardPanel->close();
+    //Configure the selection item.
+    m_menuItems[BeginEndSelect]->setCheckable(true);
     //Set icons.
     m_menuItems[Undo]->setIcon(QIcon(":/icons/undo.png"));
     m_menuItems[Redo]->setIcon(QIcon(":/icons/redo.png"));
@@ -126,7 +131,6 @@ KNEditMenu::KNEditMenu(QWidget *parent) : QMenu(parent),
     m_subMenus[OnSelection]->addSeparator();
     m_subMenus[OnSelection]->addAction(m_menuItems[SelectSearchOnInternet]);
     addSeparator();
-    addAction(m_menuItems[ColunmMode]);
     addAction(m_menuItems[ColumnEditor]);
     addAction(m_menuItems[CharacterPanel]);
     addAction(m_menuItems[ClipboardHistory]);
@@ -155,6 +159,7 @@ KNEditMenu::KNEditMenu(QWidget *parent) : QMenu(parent),
     connect(m_menuItems[Paste], &QAction::triggered, this, &KNEditMenu::onPaste);
     connect(m_menuItems[Delete], &QAction::triggered, this, &KNEditMenu::onDelete);
     connect(m_menuItems[SelectAll], &QAction::triggered, this, &KNEditMenu::onSelectAll);
+    connect(m_menuItems[BeginEndSelect], &QAction::triggered, this, &KNEditMenu::onStartEndSelect);
     connect(m_menuItems[CopyFilePath], &QAction::triggered, this, &KNEditMenu::onCopyFilePath);
     connect(m_menuItems[CopyFileName], &QAction::triggered, this, &KNEditMenu::onCopyFileName);
     connect(m_menuItems[CopyFileDir], &QAction::triggered, this, &KNEditMenu::onCopyFileDir);
@@ -192,6 +197,7 @@ KNEditMenu::KNEditMenu(QWidget *parent) : QMenu(parent),
     connect(m_menuItems[SelectShowInExplorer], &QAction::triggered, this, &KNEditMenu::onSelectShowInExplorer);
     connect(m_menuItems[SelectSearchOnInternet], &QAction::triggered, this, &KNEditMenu::onSelectNetSearch);
     connect(m_menuItems[CharacterPanel], &QAction::triggered, m_charPanel, &QDockWidget::show);
+    connect(m_menuItems[ClipboardHistory], &QAction::triggered, m_clipboardPanel, &KNClipboardHistory::show);
     connect(m_menuItems[SetReadOnly], &QAction::triggered, this, &KNEditMenu::onSetReadOnly);
     connect(m_menuItems[ClearReadOnly], &QAction::triggered, this, &KNEditMenu::onClearReadOnly);
     //Link translator.
@@ -231,6 +237,8 @@ void KNEditMenu::setEditor(KNTextEditor *editor)
     onCopyAvailable(m_editor->canCopy());
     editorCanPasteCheck();
     onReadOnlyChanged(m_editor->isReadOnly());
+    //Update select status.
+    m_menuItems[BeginEndSelect]->setChecked(false);
 }
 
 QAction *KNEditMenu::menuItem(int index)
@@ -250,7 +258,6 @@ void KNEditMenu::retranslate()
     m_menuItems[Delete]->setText(tr("&Delete"));
     m_menuItems[SelectAll]->setText(tr("Select &All"));
     m_menuItems[BeginEndSelect]->setText(tr("Begin/End Select"));
-    m_menuItems[ColunmMode]->setText(tr("Column Mode..."));
     m_menuItems[ColumnEditor]->setText(tr("Column Editor..."));
     m_menuItems[CharacterPanel]->setText(tr("Character Panel"));
     m_menuItems[ClipboardHistory]->setText(tr("Clipboard History"));
@@ -867,6 +874,31 @@ void KNEditMenu::onInsertText(const QString &text)
     {
         //Enable the read only mode of the editor.
         m_editor->textCursor().insertText(text);
+        //Move the focus on the editor.
+        m_editor->setFocus();
+    }
+}
+
+void KNEditMenu::onStartEndSelect()
+{
+    if(m_editor)
+    {
+        QTextCursor tc = m_editor->textCursor();
+        //Check the selection status.
+        if(m_menuItems[BeginEndSelect]->isChecked())
+        {
+            //Save the status.
+            m_selectStart = tc.position();
+        }
+        else
+        {
+            //Apply the selection.
+            int finalPos = tc.position();
+            //Select the area.
+            tc.setPosition(m_selectStart);
+            tc.setPosition(finalPos, QTextCursor::KeepAnchor);
+            m_editor->setTextCursor(tc);
+        }
     }
 }
 

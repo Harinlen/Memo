@@ -1117,11 +1117,6 @@ QList<QTextCursor> KNTextEditor::columnSelectionText(QString &selectionText) con
 
 void KNTextEditor::updateExtraSelections()
 {
-    if(m_connections.isEmpty())
-    {
-        //No need to maintian extra selection in this case.
-        return;
-    }
     //Construct the selection list.
     QList<QTextEdit::ExtraSelection> selections;
     //Current lines.
@@ -1132,64 +1127,68 @@ void KNTextEditor::updateExtraSelections()
         selections.append(m_currentLine);
     }
 
-    //Column selections.
-    if(m_columnBlockNumber != -1)
+    if(!m_connections.isEmpty())
     {
-        //Check whether we have to create the selections.
-        if(m_columnOffset != textCursor().positionInBlock())
+        //No need to maintain extra selection in this case.
+        //Column selections.
+        if(m_columnBlockNumber != -1)
         {
-            //Construct the format.
-            QTextCharFormat format;
-            format.setBackground(palette().brush(QPalette::Highlight));
-            format.setForeground(palette().brush(QPalette::HighlightedText));
-            //Construct the block start.
-            auto ccs = columnCursors();
-            for(auto cc : ccs)
+            //Check whether we have to create the selections.
+            if(m_columnOffset != textCursor().positionInBlock())
             {
-                //Construct the selection.
-                QTextEdit::ExtraSelection selection;
-                selection.cursor = cc;
-                selection.format = format;
-                selections.append(selection);
+                //Construct the format.
+                QTextCharFormat format;
+                format.setBackground(palette().brush(QPalette::Highlight));
+                format.setForeground(palette().brush(QPalette::HighlightedText));
+                //Construct the block start.
+                auto ccs = columnCursors();
+                for(auto cc : ccs)
+                {
+                    //Construct the selection.
+                    QTextEdit::ExtraSelection selection;
+                    selection.cursor = cc;
+                    selection.format = format;
+                    selections.append(selection);
+                }
             }
         }
-    }
 
-    // Quick search result.
-    auto block = firstVisibleBlock();
-    QRectF blockRect = blockBoundingGeometry(block).translated(contentOffset());
-    auto searchFormat = knGlobal->quickSearchFormat();
-    while(block.isValid() && blockRect.bottom() < height())
-    {
-        //Load for all the items to the selections.
-        auto data = blockData(block);
-        if(!data)
+        // Quick search result.
+        auto block = firstVisibleBlock();
+        QRectF blockRect = blockBoundingGeometry(block).translated(contentOffset());
+        auto searchFormat = knGlobal->quickSearchFormat();
+        while(block.isValid() && blockRect.bottom() < height())
         {
-            break;
-        }
-        if(!m_quickSearchKeyword.isEmpty() && m_showResults)
-        {
-            //Add all the selection to the extra selections.
-            QTextEdit::ExtraSelection selection;
-            selection.format = searchFormat;
-            //Ensure block information.
-            quickSearchCheck(block);
-            for(auto result : data->results)
+            //Load for all the items to the selections.
+            auto data = blockData(block);
+            if(!data)
             {
-                QTextCursor tc = textCursor();
-                tc.setPosition(block.position() + result.pos);
-                tc.movePosition(QTextCursor::NextCharacter,
-                                QTextCursor::KeepAnchor,
-                                result.length);
+                break;
+            }
+            if(!m_quickSearchKeyword.isEmpty() && m_showResults)
+            {
+                //Add all the selection to the extra selections.
                 QTextEdit::ExtraSelection selection;
                 selection.format = searchFormat;
-                selection.cursor = tc;
-                selections.append(selection);
+                //Ensure block information.
+                quickSearchCheck(block);
+                for(auto result : data->results)
+                {
+                    QTextCursor tc = textCursor();
+                    tc.setPosition(block.position() + result.pos);
+                    tc.movePosition(QTextCursor::NextCharacter,
+                                    QTextCursor::KeepAnchor,
+                                    result.length);
+                    QTextEdit::ExtraSelection selection;
+                    selection.format = searchFormat;
+                    selection.cursor = tc;
+                    selections.append(selection);
+                }
             }
+            //Move to the next block.
+            block = block.next();
+            blockRect = blockBoundingGeometry(block);
         }
-        //Move to the next block.
-        block = block.next();
-        blockRect = blockBoundingGeometry(block);
     }
 
     setExtraSelections(selections);

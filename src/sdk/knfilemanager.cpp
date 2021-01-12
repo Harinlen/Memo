@@ -600,6 +600,45 @@ KNTextEditor *KNFileManager::currentEditor() const
     return editorAt(m_tabBar->currentIndex());
 }
 
+KNTextEditor *KNFileManager::locateEditor(const QString &pathOrTitle)
+{
+    //Check the file path exist.
+    QFileInfo pathInfo(pathOrTitle);
+    if(pathInfo.isFile())
+    {
+        //Find the path in all the editor.
+        for(int i=0; i<m_editorPanel->count(); ++i)
+        {
+            //Check the title.
+            auto editor = editorAt(i);
+            if(editor->filePath() == pathOrTitle)
+            {
+                //Switch to the editor.
+                setCurrentTab(i);
+                return editor;
+            }
+        }
+        //The editor does not exist, then we open the file.
+        int tabId = createFileTab(pathOrTitle);
+        setCurrentTab(tabId);
+        //Extract the editor from the tab id.
+        return editorAt(tabId);
+    }
+    //Or else, it is the title and not saved, check the title.
+    for(int i=0; i<m_editorPanel->count(); ++i)
+    {
+        //Check the title.
+        auto editor = editorAt(i);
+        if(editor->documentTitle() == pathOrTitle)
+        {
+            setCurrentTab(i);
+            return editor;
+        }
+    }
+    //Then, the editor does not exist.
+    return nullptr;
+}
+
 QVector<KNTextEditor *> KNFileManager::allEditors() const
 {
     //Construct the editor the list.

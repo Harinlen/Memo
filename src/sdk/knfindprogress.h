@@ -29,6 +29,11 @@ signals:
 public slots:
     void setMaxCount(int count);
     void setFilePath(int id, const QString &path);
+    void engineClose();
+
+protected:
+    void showEvent(QShowEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
 
 private slots:
     void retranslate();
@@ -37,6 +42,7 @@ private:
     QProgressBar *m_progress;
     QPushButton *m_cancel;
     QLabel *m_filePath;
+    bool m_closeFlag;
 };
 
 #endif // KNFINDPROGRESS_H

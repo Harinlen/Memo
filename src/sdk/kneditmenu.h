@@ -17,6 +17,7 @@
 
 class QDockWidget;
 class KNTextEditor;
+class KNClipboardHistory;
 /*!
  * \brief The KNEditMenu class provides the edit menu of the main window. It is
  * able to connect to an text editor.
@@ -35,7 +36,6 @@ public:
         Delete,
         SelectAll,
         BeginEndSelect,
-        ColunmMode,
         ColumnEditor,
         CharacterPanel,
         ClipboardHistory,
@@ -142,6 +142,7 @@ private slots:
     void onSetReadOnly();
     void onClearReadOnly();
     void onInsertText(const QString &text);
+    void onStartEndSelect();
 
 private:
     enum SortMode
@@ -181,7 +182,9 @@ private:
 
     QVector<QMetaObject::Connection> m_connects;
     KNTextEditor *m_editor;
-    QDockWidget *m_charPanel, *m_clipboardPanel;
+    QDockWidget *m_charPanel;
+    KNClipboardHistory *m_clipboardPanel;
+    int m_selectStart;
 };
 
 #endif // KNEDITMENU_H

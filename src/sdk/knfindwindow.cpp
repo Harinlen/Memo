@@ -206,13 +206,13 @@ KNFindWindow::KNFindWindow(KNSearchResult *result, QWidget *parent) :
     connect(this, &KNFindWindow::requireStartSearch,
             m_engine, &KNFindEngine::start, Qt::QueuedConnection);
     connect(m_engine, &KNFindEngine::searchBreak,
-            m_progressWindow, &KNFindProgress::close, Qt::QueuedConnection);
+            m_progressWindow, &KNFindProgress::engineClose, Qt::QueuedConnection);
     connect(m_engine, &KNFindEngine::searching,
             m_progressWindow, &KNFindProgress::setFilePath, Qt::QueuedConnection);
     connect(m_engine, &KNFindEngine::searchCountChange,
             m_progressWindow, &KNFindProgress::setMaxCount, Qt::QueuedConnection);
-//    connect(m_engine, &KNFindEngine::searchComplete,
-//            m_progressWindow, &KNFindProgress::close, Qt::QueuedConnection);
+    connect(m_engine, &KNFindEngine::searchComplete,
+            m_progressWindow, &KNFindProgress::engineClose, Qt::QueuedConnection);
     //Move engine to the other thread.
     m_engine->moveToThread(&m_engineThread);
     m_engineThread.start();
@@ -549,6 +549,7 @@ void KNFindWindow::onFindInCurrentDoc()
     m_progressWindow->exec();
     //Append the result to search result.
     m_resultWindow->addResult(m_engine->result());
+    m_resultWindow->show();
 }
 
 void KNFindWindow::onFindInAllDoc()
@@ -570,6 +571,7 @@ void KNFindWindow::onFindInAllDoc()
     m_progressWindow->exec();
     //Append the result to search result.
     m_resultWindow->addResult(m_engine->result());
+    m_resultWindow->show();
 }
 
 void KNFindWindow::onReplace()

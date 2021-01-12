@@ -97,6 +97,9 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     m_menuItems[SelectAndFindNext]->setShortcut(QKeySequence(KNG::CTRL | Qt::Key_F3));
     m_menuItems[SelectAndFindPrev]->setShortcut(QKeySequence(KNG::CTRL | KNG::SHIFT | Qt::Key_F3));
     m_menuItems[IncrementSearch]->setShortcut(QKeySequence(KNG::CTRL | KNG::ALT | Qt::Key_I));
+    m_menuItems[SearchResults]->setShortcut(QKeySequence(Qt::Key_F7));
+    m_menuItems[NextResult]->setShortcut(QKeySequence(Qt::Key_F4));
+    m_menuItems[PrevResult]->setShortcut(QKeySequence(KNG::SHIFT | Qt::Key_F4));
     m_menuItems[GoTo]->setShortcut(QKeySequence(KNG::CTRL | Qt::Key_G));
     m_menuItems[BookmarkToggle]->setShortcut(QKeySequence(KNG::CTRL | Qt::Key_F2));
     m_menuItems[BookmarkNext]->setShortcut(QKeySequence(Qt::Key_F2));
@@ -110,6 +113,7 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     connect(m_menuItems[FindVolatilePrev], &QAction::triggered, m_searchBar, &KNSearchBar::findPrevious);
     connect(m_menuItems[Replace], &QAction::triggered, this, &KNSearchMenu::onReplace);
     connect(m_menuItems[IncrementSearch], &QAction::triggered, m_searchBar, &KNSearchBar::showAndSetFocus);
+    connect(m_menuItems[SearchResults], &QAction::triggered, m_searchResult, &KNSearchResult::show);
     connect(m_menuItems[GoTo], &QAction::triggered, this, &KNSearchMenu::onGoto);
 //    connect(m_menuItems[Mark], &QAction::triggered, this, &KNSearchMenu::onMark);
     connect(m_menuItems[BookmarkToggle], &QAction::triggered, this, &KNSearchMenu::onBookmarkToggle);
@@ -122,6 +126,8 @@ KNSearchMenu::KNSearchMenu(QWidget *parent) : QMenu(parent),
     connect(m_menuItems[BookmarkRemoveAll], &QAction::triggered, [=] { onBookmarkRemove(false); });
     connect(m_menuItems[BookmarkRemoveLeft], &QAction::triggered, [=] { onBookmarkRemove(true); });
     connect(m_menuItems[BookmarkInverse], &QAction::triggered, this, &KNSearchMenu::onBookmarkInverse);
+    //Hide the find result.
+    m_searchResult->hide();
 }
 
 void KNSearchMenu::retranslate()

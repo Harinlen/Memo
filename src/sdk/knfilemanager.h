@@ -118,6 +118,13 @@ public:
     KNTextEditor *currentEditor() const;
 
     /*!
+     * \brief Get an existed editor based on the title or the file.
+     * \param pathOrTitle The path or the title of the editor.
+     * \return The text editor pointer.
+     */
+    KNTextEditor *locateEditor(const QString &pathOrTitle);
+
+    /*!
      * \brief Get all the editor pointers.
      * \return The editor pointer list.
      */

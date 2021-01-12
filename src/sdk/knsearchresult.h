@@ -16,7 +16,8 @@
 #include <QTextEdit>
 #include <QDockWidget>
 
-class KNTextEditor;
+class KNFileManager;
+class KNSearchResultEditor;
 /*!
  * \brief The KNSearchResult class provides a special editor for displaying the
  * search result.
@@ -29,7 +30,7 @@ public:
     {
         QString slice;
         int row;
-        int posInRow;
+        int posStart;
         int length;
     };
 
@@ -55,14 +56,18 @@ signals:
 
 public slots:
     void addResult(const SearchResult &result);
+    void clearResult();
 
 private slots:
     void retranslate();
+    void onShowResult(int resultId, int fileId, int itemId);
 
 private:
-    KNTextEditor *m_editor;
-    QList<QTextEdit::ExtraSelection> m_selections;
+    QMenu *m_resultMenu;
+    QVector<SearchResult> m_results;
     QTextCharFormat m_resultFormat;
+    KNFileManager *m_manager;
+    KNSearchResultEditor *m_editor;
 };
 
 #endif // KNSEARCHRESULT_H

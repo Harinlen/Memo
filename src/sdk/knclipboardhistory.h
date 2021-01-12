@@ -32,13 +32,19 @@ public:
     explicit KNClipboardHistory(QWidget *parent = nullptr);
 
 signals:
+    /*!
+     * \brief Request to insert the specific text to text editor.
+     * \param data The data string to insert.
+     */
+    void requireInsert(QString data);
 
 private slots:
     void retranslate();
     void onDataChanged();
+    void onLinkPaste(const QModelIndex &index);
 
 private:
-    QStringList m_history;
+    QStringList m_history, m_display;
     QListView *m_historyView;
     QStringListModel *m_historyModel;
 };

@@ -213,7 +213,7 @@ void KNFindEngine::start()
         //Check the file result.
         KNSearchResult::FileResult fileResult;
         //Construct a text cursor of the document.
-        QTextCursor tc(document);
+        QTextCursor tc(document), posDetect(document);
         tc.movePosition(QTextCursor::Start);
         //Do the first search in the document.
         tc = cacheSearch(document, tc, m_cache, m_flags);
@@ -223,9 +223,14 @@ void KNFindEngine::start()
             //Construct the result item.
             KNSearchResult::ItemResult itemResult;
             //Append the result.
-            itemResult.row = tc.blockNumber();
-            itemResult.posInRow = tc.positionInBlock();
             itemResult.length = tc.selectionEnd() - tc.selectionStart();
+            posDetect.setPosition(tc.selectionStart());
+            itemResult.row = posDetect.blockNumber();
+            itemResult.posStart = posDetect.positionInBlock();
+            QString slice = tc.block().text();
+            slice = slice.left(itemResult.posStart + 50);
+            slice = slice.right(100);
+            itemResult.slice = slice;
             fileResult.items.append(itemResult);
             //Check quit request.
             m_quitLock.lock();

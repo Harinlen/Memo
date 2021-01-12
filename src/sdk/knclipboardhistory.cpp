@@ -31,17 +31,33 @@ KNClipboardHistory::KNClipboardHistory(QWidget *parent) :
     setWidget(m_historyView);
     //Set the model.
     m_historyView->setModel(m_historyModel);
+    m_historyView->setEditTriggers(QListView::NoEditTriggers);
     //Link the clipboard.
     connect(qApp->clipboard(), &QClipboard::dataChanged,
             this, &KNClipboardHistory::onDataChanged);
+    //Link the view widget.
+    connect(m_historyView, &QListView::activated,
+            this, &KNClipboardHistory::onLinkPaste);
     //Link the retranslate.
     knUi->addTranslate(this, &KNClipboardHistory::retranslate);
+    //Check the clipboard is valid or not.
+    onDataChanged();
 }
 
 void KNClipboardHistory::retranslate()
 {
     //Update the title.
     setWindowTitle(tr("Clipboard History"));
+}
+
+QString displayText(const QString &source)
+{
+    QString simp = source.simplified();
+    if(simp.length() > 22)
+    {
+        return simp.left(22) + "...";
+    }
+    return simp;
 }
 
 void KNClipboardHistory::onDataChanged()
@@ -58,16 +74,26 @@ void KNClipboardHistory::onDataChanged()
     {
         //Prepend the shorten the history.
         m_history.prepend(buf);
+        m_display.prepend(displayText(buf));
         if(m_history.length() >= MAX_RECORD)
         {
             m_history = m_history.mid(0, MAX_RECORD);
+            m_display = m_display.mid(0, MAX_RECORD);
         }
     }
     else
     {
+        //Move the history to the first.
+        m_display.move(bufIndex, 0);
         //Move the record to the first.
         m_history.move(bufIndex, 0);
     }
     //Update the model.
-    m_historyModel->setStringList(m_history);
+    m_historyModel->setStringList(m_display);
+}
+
+void KNClipboardHistory::onLinkPaste(const QModelIndex &index)
+{
+    //Set the paste data.
+    emit requireInsert(m_history.at(index.row()));
 }

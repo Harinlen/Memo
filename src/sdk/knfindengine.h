@@ -22,6 +22,7 @@
 
 #include <QObject>
 
+class KNTextEditor;
 class KNFindEngine : public QObject
 {
     Q_OBJECT
