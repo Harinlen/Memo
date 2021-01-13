@@ -127,7 +127,9 @@ HEADERS += \
     sdk/knuimanager.h \
     sdk/knutil.h \
     sdk/knversion.h \
-    sdk/knviewmenu.h
+    sdk/knviewmenu.h \
+    sdk/knwindowmanager.h \
+    sdk/knwindowsmenu.h
 
 SOURCES += \
     main.cpp \
@@ -173,5 +175,7 @@ SOURCES += \
     sdk/kntoolmenu.cpp \
     sdk/knuimanager.cpp \
     sdk/knutil.cpp \
-    sdk/knviewmenu.cpp
+    sdk/knviewmenu.cpp \
+    sdk/knwindowmanager.cpp \
+    sdk/knwindowsmenu.cpp
 

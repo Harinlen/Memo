@@ -70,6 +70,7 @@ void KNMainWindow::initalize()
     menuBar()->addMenu(m_fileManager->viewMenu());
     menuBar()->addMenu(m_fileManager->codecMenu());
     menuBar()->addMenu(m_fileManager->toolMenu());
+    menuBar()->addMenu(m_fileManager->windowsMenu());
     menuBar()->addMenu(new KNHelpMenu(this));
     //Configure the toolbar.
     m_toolbar->setMovable(false);

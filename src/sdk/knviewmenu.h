@@ -119,7 +119,6 @@ private:
     {
         ShowSymbol,
         Zoom,
-        DocumentOps,
         Tab,
         CollapseLevel,
         UncollapseLevel,

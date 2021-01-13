@@ -43,7 +43,6 @@ KNViewMenu::KNViewMenu(QWidget *parent) :
     m_subMenus[Zoom]->addAction(m_menuItems[ZoomIn]);
     m_subMenus[Zoom]->addAction(m_menuItems[ZoomOut]);
     m_subMenus[Zoom]->addAction(m_menuItems[ZoomReset]);
-    addMenu(m_subMenus[DocumentOps]);
     addMenu(m_subMenus[Tab]);
     m_subMenus[Tab]->addAction(m_menuItems[TabNo1]);
     m_subMenus[Tab]->addAction(m_menuItems[TabNo2]);
@@ -183,7 +182,6 @@ void KNViewMenu::retranslate()
     //Retranslate all the menus.
     m_subMenus[ShowSymbol]->setTitle(tr("Show Symbol"));
     m_subMenus[Zoom]->setTitle(tr("Zoom"));
-    m_subMenus[DocumentOps]->setTitle(tr("Move/Clone Current Document"));
     m_subMenus[Tab]->setTitle(tr("Tab"));
     m_subMenus[CollapseLevel]->setTitle(tr("Collapse Level"));
     m_subMenus[UncollapseLevel]->setTitle(tr("Uncollapse Level"));

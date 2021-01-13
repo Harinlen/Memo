@@ -24,6 +24,7 @@ class KNSearchMenu;
 class KNViewMenu;
 class KNCodecMenu;
 class KNToolMenu;
+class KNWindowsMenu;
 class KNTabSwitcher;
 class KNRecentFileRecorder;
 /*!
@@ -162,6 +163,12 @@ public:
      */
     QMenu *toolMenu() const;
 
+    /*!
+     * \brief Get the window menu.
+     * \return The menu pointer.
+     */
+    QMenu *windowsMenu() const;
+
 signals:
     void titleChange(const QString &title);
     void editorChanged();
@@ -230,6 +237,7 @@ private:
     QMenu *m_subMenus[SubMenuCount];
     QAction *m_menuItems[MenuItemCount];
     KNTabBar *m_tabBar;
+    KNWindowsMenu *m_windowsMenu;
     QStackedWidget *m_editorPanel;
     KNTabSwitcher *m_tabSwitcher;
 

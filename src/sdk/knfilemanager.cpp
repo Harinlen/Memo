@@ -33,6 +33,7 @@
 #include "knutil.h"
 #include "knsearchbar.h"
 #include "kntoolmenu.h"
+#include "knwindowsmenu.h"
 #include "knrecentfilerecorder.h"
 #include "kntabswitcher.h"
 
@@ -47,6 +48,7 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
     m_toolMenu(new KNToolMenu(this)),
     m_recent(new KNRecentFileRecorder(this)),
     m_tabBar(new KNTabBar(this)),
+    m_windowsMenu(new KNWindowsMenu(m_tabBar, this)),
     m_editorPanel(new QStackedWidget(this)),
     m_tabSwitcher(new KNTabSwitcher(parent)),
     m_newCounter(0)
@@ -729,6 +731,11 @@ bool KNFileManager::saveAsEditor(KNTextEditor *editor)
         }
     }
     return false;
+}
+
+QMenu *KNFileManager::windowsMenu() const
+{
+    return m_windowsMenu;
 }
 
 QMenu *KNFileManager::toolMenu() const
