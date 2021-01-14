@@ -21,7 +21,7 @@
 
 KNWindowsMenu::KNWindowsMenu(KNTabBar *tabBar, QWidget *parent) : QMenu(parent),
     m_tabBar(tabBar),
-    m_manager(new KNWindowManager(tabBar, this))
+    m_manager(new KNWindowManager(tabBar, parent))
 {
     //Create signal mapper.
     QSignalMapper *mapper = new QSignalMapper(this);

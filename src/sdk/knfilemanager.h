@@ -169,6 +169,20 @@ public:
      */
     QMenu *windowsMenu() const;
 
+    /*!
+     * \brief Close tabs as providing their index in a list.
+     * \param tabIndexs Tab index as list.
+     * \return If all of these tabs are closed, return true.
+     */
+    bool closeTabs(QVector<int> tabIndexs);
+
+    /*!
+     * \brief Save a specific editor.
+     * \param editor The text editor pointer.
+     * \return If the editor is successfully saved, return true.
+     */
+    bool saveEditor(KNTextEditor *editor);
+
 signals:
     void titleChange(const QString &title);
     void editorChanged();
@@ -182,6 +196,7 @@ public slots:
     void saveAll();
     void closeTab();
     bool closeAllTab();
+    void closeAllElse();
     void closeAllLeft();
     void closeAllRight();
     void closeAllSaved();
@@ -218,7 +233,6 @@ private:
     void updateFileItemsEnabled(bool isSaved);
     bool isEditorNewEmpty(KNTextEditor *editor) const;
     int createEditorTab(KNTextEditor *editor);
-    bool saveEditor(KNTextEditor *editor);
     bool saveAsEditor(KNTextEditor *editor);
     void printEditor(KNTextEditor *editor);
     enum SubMenus

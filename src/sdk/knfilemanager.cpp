@@ -224,6 +224,8 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
         closeAllTab();
         ensureEmptyTab();
     });
+    connect(m_menuItems[CloseAllElse], &QAction::triggered,
+            this, &KNFileManager::closeAllElse);
     connect(m_menuItems[CloseAllLeft], &QAction::triggered,
             this, &KNFileManager::closeAllLeft);
     connect(m_menuItems[CloseAllRight], &QAction::triggered,
@@ -372,6 +374,28 @@ bool KNFileManager::closeAllTab()
     return closeTabRange(0, m_tabBar->count());
 }
 
+void KNFileManager::closeAllElse()
+{
+    //Check tab bar index first.
+    if(m_tabBar->count() == 1)
+    {
+        return;
+    }
+    //Close all the other tabs.
+    QVector<int> tabIds;
+    tabIds.reserve(m_tabBar->count() - 1);
+    int currentId = m_tabBar->currentIndex();
+    for(int i=0; i<m_tabBar->count(); ++i)
+    {
+        if(currentId != i)
+        {
+            tabIds.append(i);
+        }
+    }
+    //Close all the tabs.
+    closeTabs(tabIds);
+}
+
 void KNFileManager::closeAllLeft()
 {
     //Check tab bar index first.
@@ -391,8 +415,8 @@ void KNFileManager::closeAllRight()
         return;
     }
     //Close the left range tabs.
-    closeTabRange(m_tabBar->currentIndex(),
-                  m_tabBar->count() - m_tabBar->currentIndex());
+    closeTabRange(m_tabBar->currentIndex() + 1,
+                  m_tabBar->count() - m_tabBar->currentIndex() - 1);
 }
 
 void KNFileManager::closeAllSaved()
@@ -975,13 +999,23 @@ void KNFileManager::ensureEmptyTab()
 
 bool KNFileManager::closeTabRange(int start, int length)
 {
-    QVector<int> unsavedIds;
-    //Save all first.
+    QVector<int> tabIds;
     for(int i=start; i<start+length; ++i)
     {
-        if(editorAt(i)->document()->isModified())
+        tabIds.append(i);
+    }
+    return closeTabs(tabIds);
+}
+
+bool KNFileManager::closeTabs(QVector<int> tabIndexs)
+{
+    QVector<int> unsavedIds;
+    //Save all first.
+    for(int i=0; i<tabIndexs.size(); ++i)
+    {
+        if(editorAt(tabIndexs.at(i))->document()->isModified())
         {
-            unsavedIds.append(i);
+            unsavedIds.append(tabIndexs.at(i));
         }
     }
     //Check the unsaved ID length.
@@ -1076,8 +1110,6 @@ bool KNFileManager::closeTabRange(int start, int length)
             {
                 return false;
             }
-            //Reduce the length for once at the editor is successfully closed.
-            --length;
         }
     }
     //If this is an empty new file and it is the last one, do not close.
@@ -1086,18 +1118,22 @@ bool KNFileManager::closeTabRange(int start, int length)
         //Treat as already closed.
         return true;
     }
-    //Close all the tabs.
+    //Sort all the index.
+    std::sort(tabIndexs.begin(), tabIndexs.end());
+    //Close all the tabs from the back.
     QStringList filePaths;
-    while(length--)
+    for(auto i=tabIndexs.size() - 1; i > -1; --i)
     {
+        //Fetch the tab id.
+        int tabId = tabIndexs.at(i);
         //Append the file path.
-        auto editor = static_cast<KNTextEditor *>(m_editorPanel->widget(start));
+        auto editor = static_cast<KNTextEditor *>(m_editorPanel->widget(tabId));
         if(!editor->filePath().isEmpty())
         {
             filePaths.append(editor->filePath());
         }
         //Remove the tab and editor.
-        removeEditorAndTab(start);
+        removeEditorAndTab(tabId);
     }
     //Append the file paths.
     m_recent->pushRecords(filePaths);

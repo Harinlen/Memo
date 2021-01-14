@@ -134,6 +134,8 @@ KNViewMenu::KNViewMenu(QWidget *parent) :
     connect(m_menuItems[TabMoveForward], &QAction::triggered, this, &KNViewMenu::requireMoveForward);
     connect(m_menuItems[TabMoveBackward], &QAction::triggered, this, &KNViewMenu::requireMoveBackward);
     connect(m_menuItems[Summary], &QAction::triggered, this, &KNViewMenu::requireToShowSummary);
+    connect(m_menuItems[TextDirectionRTL], &QAction::triggered, [=]{ knGlobal->setAlignLeft(false); });
+    connect(m_menuItems[TextDirectionLTR], &QAction::triggered, [=]{ knGlobal->setAlignLeft(true); });
 }
 
 QAction *KNViewMenu::menuItem(int index)

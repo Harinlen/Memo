@@ -219,6 +219,7 @@ KNTextEditor::KNTextEditor(const QString &titleName,
                            fontMetrics().averageCharWidth());
         onEditorFontChanged();
         onResultDisplayChange(knGlobal->isSearchResultShown());
+        onAlignLeftChange(knGlobal->isAlignLeft());
         //Link the cursor painting signals.
         addLink(connect(knGlobal->cursorTimer(), &QTimer::timeout,
                         this, &KNTextEditor::onCursorUpdate));
@@ -230,6 +231,8 @@ KNTextEditor::KNTextEditor(const QString &titleName,
                         this, &KNTextEditor::onWrapModeChange));
         addLink(connect(knGlobal, &KNGlobal::editorResultDisplayChange,
                         this, &KNTextEditor::onResultDisplayChange));
+        addLink(connect(knGlobal, &KNGlobal::editorAlignLeft,
+                        this, &KNTextEditor::onAlignLeftChange));
     }
     //Link the signals.
     connect(this, &KNTextEditor::updateRequest,
@@ -863,6 +866,14 @@ void KNTextEditor::onResultDisplayChange(bool showResult)
     //Update the selection.
     updateExtraSelections();
     viewport()->update();
+}
+
+void KNTextEditor::onAlignLeftChange(bool showLeft)
+{
+    //Update the default left and right position.
+    auto option = document()->defaultTextOption();
+    option.setAlignment(showLeft ? Qt::AlignLeft : Qt::AlignRight);
+    document()->setDefaultTextOption(option);
 }
 
 void KNTextEditor::quickSearchUi(const QTextBlock &block)

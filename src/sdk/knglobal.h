@@ -195,10 +195,22 @@ public:
     bool isSearchResultShown() const;
 
     /*!
+     * \brief Check whether the text alignment is left.
+     * \return If the text is align to left, return true.
+     */
+    bool isAlignLeft() const;
+
+    /*!
      * \brief Set whether the quick search result should be display.
      * \param shown To mark the result, set this value to true.
      */
     void setSearchResultShown(bool shown);
+
+    /*!
+     * \brief Set whether the text alignment is left.
+     * \param yes If the text is align to left, set yes to true.
+     */
+    void setAlignLeft(bool yes);
 
     /*!
      * \brief Get the file dialog suffix data.
@@ -235,6 +247,12 @@ signals:
      * \param result If the result display is true, set this to true.
      */
     void editorResultDisplayChange(bool result);
+
+    /*!
+     * \brief When the editor text alignment is changed, this signal is emitted.
+     * \param yes If the edtior is align left, this is set to true.
+     */
+    void editorAlignLeft(bool yes);
 
 private slots:
     void retranslate();

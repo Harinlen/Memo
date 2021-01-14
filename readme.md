@@ -1,6 +1,6 @@
 # Memo
 
-Copyright (C) 2020 Kreogist Dev Team.
+Copyright (C) 2020-2021 Kreogist Dev Team.
 
 ## Overview
 
@@ -20,7 +20,7 @@ Tested platform:
 - [x] Quick search
 - [x] Tab switcher
 - [ ] Run menu
-- [ ] Window menu
+- [x] Window menu
 - [ ] Grammar modeling backend
 - [ ] Syntax highlight
 - [ ] Code folding

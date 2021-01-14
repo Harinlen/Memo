@@ -432,6 +432,7 @@ private slots:
     void onEditorFontChanged();
     void onWrapModeChange(bool wrap);
     void onResultDisplayChange(bool showResult);
+    void onAlignLeftChange(bool showLeft);
     bool quickSearchForward(const QTextCursor &cursor);
     bool quickSearchBackward(const QTextCursor &cursor);
 

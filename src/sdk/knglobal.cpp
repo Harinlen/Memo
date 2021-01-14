@@ -271,12 +271,24 @@ bool KNGlobal::isSearchResultShown() const
     return m_configure->data("ShowQuickSearchResult", false).toBool();
 }
 
+bool KNGlobal::isAlignLeft() const
+{
+    return m_configure->data("AlignLeft", true).toBool();
+}
+
 void KNGlobal::setSearchResultShown(bool shown)
 {
     //Save the result.
     m_configure->setData("ShowQuickSearchResult", shown);
     //Emit the signal.
     emit editorResultDisplayChange(isSearchResultShown());
+}
+
+void KNGlobal::setAlignLeft(bool yes)
+{
+    m_configure->setData("AlignLeft", yes);
+    //Emit the signal.
+    emit editorAlignLeft(isAlignLeft());
 }
 
 void KNGlobal::retranslate()
