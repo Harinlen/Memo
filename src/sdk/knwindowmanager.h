@@ -19,16 +19,41 @@
 
 class KNTabBar;
 class KNFileManager;
+/*!
+ * \brief The KNWindowModel class is the internal tab bar model for the window
+ * manager. This class should be only used inside the window manager.
+ */
 class KNWindowModel : public QAbstractTableModel
 {
     Q_OBJECT
 public:
-    explicit KNWindowModel(KNTabBar *tabBar, KNFileManager *manager, QObject *parent = nullptr);
+    /*!
+     * \brief Construct a KNWindowModel object.
+     * \param tabBar The tab bar widget pointer.
+     * \param manager The file manager pointer.
+     * \param parent The parent widget pointer.
+     */
+    explicit KNWindowModel(KNTabBar *tabBar,
+                           KNFileManager *manager, QObject *parent = nullptr);
+
+    /*!
+     * \brief Reimplemented from QAbstractTableModel::rowCount().
+     */
     int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+
+    /*!
+     * \brief Reimplemented from QAbstractTableModel::columnCount().
+     */
     int columnCount(const QModelIndex &parent = QModelIndex()) const override;
 
+    /*!
+     * \brief Reimplemented from QAbstractTableModel::data().
+     */
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
 
+    /*!
+     * \brief Reimplemented from QAbstractTableModel::headerData().
+     */
     QVariant headerData(int section, Qt::Orientation orientation,
                         int role = Qt::DisplayRole) const override;
 
@@ -39,14 +64,32 @@ public:
                     int rows,
                     const QModelIndex &index = QModelIndex()) override;
 
+    /*!
+     * \brief Empty the entire model data.
+     */
     void clearModel();
 
+    /*!
+     * \brief Synchronize the model data from the tab manager.
+     */
     void synchronizeModel();
 
+    /*!
+     * \brief Get the tab ID from the row of the model.
+     * \param row The row of the model.
+     * \return The tab ID of the specific row.
+     */
     int tabId(int row) const;
 
+    /*!
+     * \brief Reimplemented from QAbstractTableModel::sort().
+     */
     void sort(int column, Qt::SortOrder order = Qt::AscendingOrder) override;
 
+    /*!
+     * \brief Extract the tab ID list from the model.
+     * \return The tab ID list.
+     */
     QVector<int> tabIdList() const;
 
 private slots:
@@ -67,16 +110,28 @@ private:
 };
 
 class QTreeView;
+/*!
+ * \brief The KNWindowManager class provides a window manager for all the
+ * existed tabs.
+ */
 class KNWindowManager : public QDialog
 {
     Q_OBJECT
 public:
+    /*!
+     * \brief Construct a KNWindowManager dialog.
+     * \param tabBar The tab bar widget manager.
+     * \param parent The parent widget.
+     */
     explicit KNWindowManager(KNTabBar *tabBar,
                              QWidget *parent = nullptr);
 
 signals:
 
 protected:
+    /*!
+     * \brief Reimplemented from QDialog::showEvent().
+     */
     void showEvent(QShowEvent *event) override;
 
 private slots:

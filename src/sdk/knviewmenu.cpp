@@ -11,17 +11,24 @@
  * license file for more details.
  */
 #include <QActionGroup>
+#include <QDockWidget>
 
 #include "knuimanager.h"
 #include "knglobal.h"
 #include "knmainwindow.h"
 #include "kntexteditor.h"
+#include "kndocumentmap.h"
 
 #include "knviewmenu.h"
 
 KNViewMenu::KNViewMenu(QWidget *parent) :
-    QMenu(parent)
+    QMenu(parent),
+    m_mapDockWidget(new QDockWidget(parent)),
+    m_docMap(new KNDocumentMap(this))
 {
+    //Add dock widgets.
+    knGlobal->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, m_mapDockWidget);
+    m_mapDockWidget->setWidget(m_docMap);
     //Construct the actions.
     for(int i=0; i<ViewMenuItemCount; ++i)
     {
@@ -143,6 +150,12 @@ QAction *KNViewMenu::menuItem(int index)
     return m_menuItems[index];
 }
 
+void KNViewMenu::setEditor(KNTextEditor *editor)
+{
+    //Set the document to map.
+//    m_docMap->setDocument(editor ? editor->document() : nullptr);
+}
+
 void KNViewMenu::retranslate()
 {
     //Update the title of the menu.
@@ -187,6 +200,8 @@ void KNViewMenu::retranslate()
     m_subMenus[Tab]->setTitle(tr("Tab"));
     m_subMenus[CollapseLevel]->setTitle(tr("Collapse Level"));
     m_subMenus[UncollapseLevel]->setTitle(tr("Uncollapse Level"));
+    //Configure the dock widget.
+    m_mapDockWidget->setWindowTitle(tr("Document Map"));
 }
 
 void KNViewMenu::onAlwaysOnTopToggle(bool checked)

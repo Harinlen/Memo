@@ -25,7 +25,7 @@ Tested platform:
 - [ ] Syntax highlight
 - [ ] Code folding
 - [ ] Tab indent display
-- [ ] Session support
+- [x] Session support
 - [ ] Workspace support
 - [x] Codec dialog
 

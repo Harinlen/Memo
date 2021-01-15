@@ -15,6 +15,9 @@
 
 #include <QMenu>
 
+class QDockWidget;
+class KNDocumentMap;
+class KNTextEditor;
 /*!
  * \brief The KNViewMenu class provides the view menu of the application.
  */
@@ -73,6 +76,12 @@ public:
      */
     QAction *menuItem(int index);
 
+    /*!
+     * \brief Set the target text editor.
+     * \param editor The editor pointer.
+     */
+    void setEditor(KNTextEditor *editor);
+
 signals:
     /*!
      * \brief Request to show a specific document tab.
@@ -127,6 +136,8 @@ private:
 
     QAction *m_menuItems[ViewMenuItemCount];
     QMenu *m_subMenus[ViewSubMenuCount];
+    QDockWidget *m_mapDockWidget;
+    KNDocumentMap *m_docMap;
 };
 
 #endif // KNVIEWMENU_H

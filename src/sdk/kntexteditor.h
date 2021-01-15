@@ -15,6 +15,7 @@
 
 #include <QAction>
 #include <QFuture>
+#include <QJsonObject>
 
 #include "kntextsearcher.h"
 
@@ -96,6 +97,18 @@ public:
      * return an empty string.
      */
     QString filePath() const;
+
+    /*!
+     * \brief Get the session object of the current editor.
+     * \return The editor session description.
+     */
+    QJsonObject sessionObject() const;
+
+    /*!
+     * \brief Restore the session states from the session object.
+     * \param sess The json object of the session.
+     */
+    void loadSessionStates(const QJsonObject &sess);
 
     /*!
      * \brief Reimplemented from QPlainTextEdit::setOverwriteMode().

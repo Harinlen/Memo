@@ -1258,7 +1258,6 @@ QString KNTextEditor::levelLevelString(int spaceLevel, int tabSpacing)
         remainSpaces = spaceLevel - tabLevel * tabSpacing;
     //Construct the level text.
     return QString(tabLevel, '\t') + QString(remainSpaces, ' ');
-
 }
 
 int KNTextEditor::cellTabSpacing(int spacePos, int tabSpacing)
@@ -1556,6 +1555,40 @@ QList<QTextCursor> KNTextEditor::columnCursors() const
 QString KNTextEditor::filePath() const
 {
     return m_filePath;
+}
+
+QJsonObject KNTextEditor::sessionObject() const
+{
+    QJsonObject sess;
+    sess.insert("VScroll", verticalScrollBar()->value());
+    sess.insert("HScroll", horizontalScrollBar()->value());
+    sess.insert("CursorStart", textCursor().selectionStart());
+    sess.insert("CursorEnd", textCursor().selectionEnd());
+    sess.insert("ReadOnly", isReadOnly());
+    sess.insert("Path", filePath());
+    return sess;
+}
+
+void KNTextEditor::loadSessionStates(const QJsonObject &sess)
+{
+    //Synchronize the data.
+    int iBuf = sess.value("VScroll").toInt(-1);
+    if(iBuf > 0)
+    {
+        verticalScrollBar()->setValue(iBuf);
+    }
+    iBuf = sess.value("HScroll").toInt(-1);
+    if(iBuf > 0)
+    {
+        horizontalScrollBar()->setValue(iBuf);
+    }
+    //Select the cursor.
+    auto tc = textCursor();
+    tc.setPosition(sess.value("CursorStart").toInt());
+    tc.setPosition(sess.value("CursorEnd").toInt(), QTextCursor::KeepAnchor);
+    setTextCursor(tc);
+    //Update the read only state.
+    setReadOnly(sess.value("ReadOnly").toBool());
 }
 
 void KNTextEditor::setOverwriteMode(bool overwrite)

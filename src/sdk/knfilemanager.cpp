@@ -19,6 +19,9 @@
 #include <QPrinter>
 #include <QPrintDialog>
 #include <QPrinterInfo>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include "kntabbar.h"
 #include "knmainwindow.h"
@@ -234,6 +237,10 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
             this, &KNFileManager::closeAllSaved);
     connect(m_menuItems[ReloadFile], &QAction::triggered,
             this, &KNFileManager::onReloadCurrent);
+    connect(m_menuItems[LoadSession], &QAction::triggered,
+            this, &KNFileManager::onLoadSession);
+    connect(m_menuItems[SaveSession], &QAction::triggered,
+            this, &KNFileManager::onSaveSession);
     connect(m_menuItems[Print], &QAction::triggered,
             this, &KNFileManager::printCurrent);
     connect(m_menuItems[PrintNow], &QAction::triggered,
@@ -302,16 +309,9 @@ void KNFileManager::createTab()
 
 void KNFileManager::openTabs()
 {
-    //Extract the file path of the current editor.
-    QString startPath;
-    auto editor = currentEditor();
-    if(editor && !editor->filePath().isEmpty())
-    {
-        startPath = QFileInfo(editor->filePath()).absolutePath();
-    }
     //Get the file path.
     QStringList filePaths = QFileDialog::getOpenFileNames(
-                knMainWindow, tr("Open"), startPath,
+                knMainWindow, tr("Open"), startPath(),
                 knGlobal->fileDialogSuffix());
     //Open the file paths.
     openFiles(filePaths);
@@ -335,15 +335,9 @@ void KNFileManager::saveCopyAs()
     KNTextEditor *editor=currentEditor();
     if(editor)
     {
-        //Get the start path.
-        QString startPath;
-        if(!editor->filePath().isEmpty())
-        {
-            startPath = QFileInfo(editor->filePath()).absolutePath();
-        }
         //Get the file path.
         QString filePath = QFileDialog::getSaveFileName(
-                    knMainWindow, tr("Save Copy To"), startPath,
+                    knMainWindow, tr("Save Copy To"), startPath(),
                     knGlobal->fileDialogSuffix());
         if(!filePath.isEmpty())
         {
@@ -564,6 +558,7 @@ void KNFileManager::onTabChange(int index)
         //Update the menu target.
         m_editMenu->setEditor(editor);
         m_searchMenu->setEditor(editor);
+        m_viewMenu->setEditor(editor);
         //Update reload state.
         updateFileItemsEnabled(editor->isOnDisk());
     }
@@ -739,15 +734,9 @@ bool KNFileManager::saveAsEditor(KNTextEditor *editor)
 {
     if(editor)
     {
-        //Get the start path.
-        QString startPath;
-        if(!editor->filePath().isEmpty())
-        {
-            startPath = QFileInfo(editor->filePath()).absolutePath();
-        }
         //Get the file path.
         QString filePath = QFileDialog::getSaveFileName(
-                    knMainWindow, tr("Save As"), startPath,
+                    knMainWindow, tr("Save As"), startPath(),
                     knGlobal->fileDialogSuffix());
         if(!filePath.isEmpty())
         {
@@ -755,6 +744,33 @@ bool KNFileManager::saveAsEditor(KNTextEditor *editor)
         }
     }
     return false;
+}
+
+int KNFileManager::openFileAt(const QString &filePath)
+{
+    //Check whether the file is already opened.
+    for(int i=0; i<m_editorPanel->count(); ++i)
+    {
+        KNTextEditor *editor = editorAt(i);
+        if(editor->filePath() == filePath)
+        {
+            //Show the tab.
+            return i;
+        }
+    }
+    //Truly open the file and switch to the tab.
+    return createFileTab(filePath);
+}
+
+QString KNFileManager::startPath() const
+{
+    QString startPath;
+    auto editor = currentEditor();
+    if(editor && !editor->filePath().isEmpty())
+    {
+        startPath = QFileInfo(editor->filePath()).absolutePath();
+    }
+    return startPath;
 }
 
 QMenu *KNFileManager::windowsMenu() const
@@ -881,19 +897,8 @@ int KNFileManager::createFileTab(const QString &filePath)
 
 void KNFileManager::openFile(const QString &filePath)
 {
-    //Check whether the file is already opened.
-    for(int i=0; i<m_editorPanel->count(); ++i)
-    {
-        KNTextEditor *editor = editorAt(i);
-        if(editor->filePath() == filePath)
-        {
-            //Show the tab.
-            m_tabBar->setCurrentIndex(i);
-            return;
-        }
-    }
-    //Truly open the file and switch to the tab.
-    m_tabBar->setCurrentIndex(createFileTab(filePath));
+    //Open the file, switch to the tab.
+    m_tabBar->setCurrentIndex(openFileAt(filePath));
 }
 
 void KNFileManager::openFiles(const QStringList &filePaths)
@@ -970,6 +975,76 @@ void KNFileManager::onQuickSearch(const QString &keywords,
         //Do quick search with the cursor position.
         editor->quickSearch(keywords, cs, position);
     }
+}
+
+void KNFileManager::onLoadSession()
+{
+    //Get the session file path.
+    QString sessionPath = QFileDialog::getOpenFileName(
+                knMainWindow, tr("Load Session From"), startPath());
+    if(sessionPath.isEmpty())
+    {
+        return;
+    }
+    //Load the json object from the file.
+    QFile sessionFile(sessionPath);
+    if(!sessionFile.open(QIODevice::ReadOnly))
+    {
+        QMessageBox::information(this, tr("Load failed"),
+                                 tr("Please check if session file is opened in another program."));
+        return;
+    }
+    //Now Load the content.
+    QJsonObject sessionObj = QJsonDocument::fromJson(sessionFile.readAll()).object();
+    sessionFile.close();
+    int currentId = sessionObj.value("Current").toInt();
+    //Parse the session object and load the data.
+    QJsonArray tabInfo = sessionObj.value("Tabs").toArray();
+    for(int i=0; i<tabInfo.size(); ++i)
+    {
+        QJsonObject editorInfo = tabInfo.at(i).toObject();
+        //Open the file from the tab info.
+        int tabId = openFileAt(editorInfo.value("Path").toString());
+        //Restore the session states.
+        editorAt(tabId)->loadSessionStates(editorInfo);
+        //Check the i is the current id.
+        if(i == currentId)
+        {
+            m_tabBar->setCurrentIndex(tabId);
+        }
+    }
+}
+
+void KNFileManager::onSaveSession()
+{
+    //Get the session file path.
+    QString sessionPath = QFileDialog::getSaveFileName(
+                knMainWindow, tr("Save Session To"), startPath());
+    if(sessionPath.isEmpty())
+    {
+        return;
+    }
+    //Construct the session file.
+    QJsonArray tabInfo;
+    for(int i=0; i<m_tabBar->count(); ++i)
+    {
+        //Write the current tab information to file manager.
+        tabInfo.append(editorAt(i)->sessionObject());
+    }
+    QJsonObject sessionObj;
+    sessionObj.insert("Current", m_tabBar->currentIndex());
+    sessionObj.insert("Tabs", tabInfo);
+    //Write tab info to the session file.
+    QFile sessionFile(sessionPath);
+    if(!sessionFile.open(QIODevice::WriteOnly))
+    {
+        QMessageBox::information(this, tr("Save failed"),
+                                 tr("Please check if session file is opened in another program."));
+        return;
+    }
+    //Now Save the content.
+    sessionFile.write(QJsonDocument(sessionObj).toJson());
+    sessionFile.close();
 }
 
 void KNFileManager::removeEditorAndTab(int index)

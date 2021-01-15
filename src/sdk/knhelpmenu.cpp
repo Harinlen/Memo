@@ -44,7 +44,7 @@ KNHelpMenu::KNHelpMenu(QWidget *parent) : QMenu(parent)
                     QString::number(QT_VERSION_PATCH));
         content.append(tr("Based on %1").arg(qtVer));
         content.append("</p><p>");
-        content.append(tr("Copyright 2020 Kreogist Dev Team. All rights reserved."));
+        content.append(tr("Copyright 2020-2021 Kreogist Dev Team. All rights reserved."));
         content.append("</p><p>");
         content.append(tr("The program is provided and distributed under the HARERU Software License; "
                           "either version 1 of the license, or (at your option) any later version. "

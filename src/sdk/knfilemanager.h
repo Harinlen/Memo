@@ -224,6 +224,8 @@ private slots:
     void onSetCodec(const QByteArray &codecName);
     void onQuickSearch(const QString &keywords, Qt::CaseSensitivity cs,
                        int position);
+    void onLoadSession();
+    void onSaveSession();
 
 private:
     void removeEditorAndTab(int index);
@@ -235,6 +237,8 @@ private:
     int createEditorTab(KNTextEditor *editor);
     bool saveAsEditor(KNTextEditor *editor);
     void printEditor(KNTextEditor *editor);
+    int openFileAt(const QString &filePath);
+    QString startPath() const;
     enum SubMenus
     {
         CloseMore,

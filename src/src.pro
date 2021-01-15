@@ -90,6 +90,7 @@ HEADERS += \
     sdk/knconfigure.h \
     sdk/knconfiguremanager.h \
     sdk/kndocumentlayout.h \
+    sdk/kndocumentmap.h \
     sdk/kneditmenu.h \
     sdk/knfilemanager.h \
     sdk/knfindengine.h \
@@ -140,6 +141,7 @@ SOURCES += \
     sdk/knconfigure.cpp \
     sdk/knconfiguremanager.cpp \
     sdk/kndocumentlayout.cpp \
+    sdk/kndocumentmap.cpp \
     sdk/kneditmenu.cpp \
     sdk/knfilemanager.cpp \
     sdk/knfindengine.cpp \
