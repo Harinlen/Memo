@@ -24,5 +24,11 @@
         <file>icons/invisibleChar.png</file>
         <file>icons/wrap.png</file>
         <file>memo.png</file>
+        <file>icons/project_file.png</file>
+        <file>icons/project_folder_close.png</file>
+        <file>icons/project_folder_open.png</file>
+        <file>icons/expand_all.png</file>
+        <file>icons/fold_all.png</file>
+        <file>icons/select_current_file.png</file>
     </qresource>
 </RCC>

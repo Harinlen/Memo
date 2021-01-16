@@ -96,9 +96,11 @@ HEADERS += \
     sdk/knfindengine.h \
     sdk/knfindprogress.h \
     sdk/knfindwindow.h \
+    sdk/knfolderpanel.h \
     sdk/knglobal.h \
     sdk/kngotowindow.h \
     sdk/knhelpmenu.h \
+    sdk/kniconprovider.h \
     sdk/knlanguagemodel.h \
     sdk/knlineedit.h \
     sdk/knlocalpeer.h \
@@ -147,9 +149,11 @@ SOURCES += \
     sdk/knfindengine.cpp \
     sdk/knfindprogress.cpp \
     sdk/knfindwindow.cpp \
+    sdk/knfolderpanel.cpp \
     sdk/knglobal.cpp \
     sdk/kngotowindow.cpp \
     sdk/knhelpmenu.cpp \
+    sdk/kniconprovider.cpp \
     sdk/knlanguagemodel.cpp \
     sdk/knlineedit.cpp \
     sdk/knlocalpeer.cpp \

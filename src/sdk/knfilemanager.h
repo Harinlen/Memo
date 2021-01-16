@@ -41,6 +41,7 @@ public:
         Open,
         ShowInExplorer,
         OpenWithDefault,
+        OpenFolder,
         ReloadFile,
         Save,
         SaveAs,
@@ -206,6 +207,7 @@ public slots:
 
 private slots:
     void retranslate();
+    void onOpenFolder();
     void onShowSwitcher();
     void onShowEditor(KNTextEditor *editor);
     void onReloadCurrent();

@@ -18,17 +18,22 @@
 #include "knmainwindow.h"
 #include "kntexteditor.h"
 #include "kndocumentmap.h"
+#include "knfolderpanel.h"
 
 #include "knviewmenu.h"
 
 KNViewMenu::KNViewMenu(QWidget *parent) :
     QMenu(parent),
     m_mapDockWidget(new QDockWidget(parent)),
-    m_docMap(new KNDocumentMap(this))
+    m_folderDockWidget(new QDockWidget(parent)),
+    m_docMap(new KNDocumentMap(this)),
+    m_folderPanel(new KNFolderPanel(this))
 {
     //Add dock widgets.
     knGlobal->mainWindow()->addDockWidget(Qt::RightDockWidgetArea, m_mapDockWidget);
     m_mapDockWidget->setWidget(m_docMap);
+    knGlobal->mainWindow()->addDockWidget(Qt::LeftDockWidgetArea, m_folderDockWidget);
+    m_folderDockWidget->setWidget(m_folderPanel);
     //Construct the actions.
     for(int i=0; i<ViewMenuItemCount; ++i)
     {
@@ -77,7 +82,7 @@ KNViewMenu::KNViewMenu(QWidget *parent) :
     addSeparator();
     addAction(m_menuItems[Summary]);
     addSeparator();
-    addAction(m_menuItems[FolderAsWorkspace]);
+    addAction(m_menuItems[FolderPanel]);
     addAction(m_menuItems[DocumentMap]);
     addAction(m_menuItems[FunctionList]);
     addSeparator();
@@ -94,6 +99,7 @@ KNViewMenu::KNViewMenu(QWidget *parent) :
     m_menuItems[ShowEOF]->setCheckable(true);
     m_menuItems[ShowAllChars]->setCheckable(true);
     m_menuItems[WordWrap]->setCheckable(true);
+    m_menuItems[FolderPanel]->setCheckable(true);
     //Set the shortcut of the menu.
     m_menuItems[FullScreen]->setShortcut(QKeySequence::FullScreen);
     m_menuItems[ZoomIn]->setShortcut(QKeySequence::ZoomIn);
@@ -141,8 +147,13 @@ KNViewMenu::KNViewMenu(QWidget *parent) :
     connect(m_menuItems[TabMoveForward], &QAction::triggered, this, &KNViewMenu::requireMoveForward);
     connect(m_menuItems[TabMoveBackward], &QAction::triggered, this, &KNViewMenu::requireMoveBackward);
     connect(m_menuItems[Summary], &QAction::triggered, this, &KNViewMenu::requireToShowSummary);
+    connect(m_menuItems[FolderPanel], &QAction::triggered, m_folderDockWidget, &QDockWidget::setVisible);
+    connect(m_folderDockWidget, &QDockWidget::visibilityChanged, m_menuItems[FolderPanel], &QAction::setChecked);
     connect(m_menuItems[TextDirectionRTL], &QAction::triggered, [=]{ knGlobal->setAlignLeft(false); });
     connect(m_menuItems[TextDirectionLTR], &QAction::triggered, [=]{ knGlobal->setAlignLeft(true); });
+    //Hide panels at default.
+    m_mapDockWidget->close();
+    m_folderDockWidget->close();
 }
 
 QAction *KNViewMenu::menuItem(int index)
@@ -153,7 +164,20 @@ QAction *KNViewMenu::menuItem(int index)
 void KNViewMenu::setEditor(KNTextEditor *editor)
 {
     //Set the document to map.
-//    m_docMap->setDocument(editor ? editor->document() : nullptr);
+    //    m_docMap->setDocument(editor ? editor->document() : nullptr);
+}
+
+void KNViewMenu::setAndShowFolder(const QString &folderPath)
+{
+    //Set the folder path.
+    m_folderPanel->setFolder(folderPath);
+    //Show the panel.
+    m_folderDockWidget->show();
+}
+
+KNFolderPanel *KNViewMenu::folderPanel() const
+{
+    return m_folderPanel;
 }
 
 void KNViewMenu::retranslate()
@@ -169,7 +193,7 @@ void KNViewMenu::retranslate()
     m_menuItems[CollapseCurrentLevel]->setText(tr("Collapse Current Level"));
     m_menuItems[UncollapseCurrentLevel]->setText(tr("Uncollapse Current Level"));
     m_menuItems[Summary]->setText(tr("Summary..."));
-    m_menuItems[FolderAsWorkspace]->setText(tr("Folder as Workspace"));
+    m_menuItems[FolderPanel]->setText(tr("Folder Panel"));
     m_menuItems[DocumentMap]->setText(tr("Document Map"));
     m_menuItems[FunctionList]->setText(tr("Function List"));
     m_menuItems[TextDirectionRTL]->setText(tr("Text Direction RTL"));
@@ -202,6 +226,7 @@ void KNViewMenu::retranslate()
     m_subMenus[UncollapseLevel]->setTitle(tr("Uncollapse Level"));
     //Configure the dock widget.
     m_mapDockWidget->setWindowTitle(tr("Document Map"));
+    m_folderDockWidget->setWindowTitle(tr("Folders"));
 }
 
 void KNViewMenu::onAlwaysOnTopToggle(bool checked)

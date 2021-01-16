@@ -26,7 +26,7 @@ Tested platform:
 - [ ] Code folding
 - [ ] Tab indent display
 - [x] Session support
-- [ ] Workspace support
+- [x] Folder Panel support
 - [x] Codec dialog
 
 ## License

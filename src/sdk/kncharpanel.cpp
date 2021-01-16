@@ -21,7 +21,7 @@ KNCharPanel::KNCharPanel(QWidget *parent) :
     m_model(new QStandardItemModel(256, 5, this))
 {
     //Create the model.
-    for(int i=0; i<256; ++i)
+    for(qint32 i=0; i<256; ++i)
     {
         //Update the data.
         m_model->setData(m_model->index(i, 0), QString::number(i));

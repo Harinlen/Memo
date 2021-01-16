@@ -39,6 +39,7 @@
 #include "knwindowsmenu.h"
 #include "knrecentfilerecorder.h"
 #include "kntabswitcher.h"
+#include "knfolderpanel.h"
 
 #include "knfilemanager.h"
 
@@ -110,6 +111,13 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
             m_tabBar, &KNTabBar::moveForward);
     connect(m_viewMenu, &KNViewMenu::requireToShowSummary,
             this, &KNFileManager::showCurrentSummary);
+    //Link the folder panel.
+    KNFolderPanel *folderPanel = m_viewMenu->folderPanel();
+    folderPanel->setFileManager(this);
+    connect(folderPanel, &KNFolderPanel::requireOpen,
+            this, &KNFileManager::openFile);
+    connect(m_tabBar, &KNTabBar::currentChanged,
+            folderPanel, &KNFolderPanel::onTraceFile);
     //Link the codec menu.
     connect(m_codecMenu, &KNCodecMenu::requireLoadAs,
             this, &KNFileManager::onReloadUseCodec);
@@ -146,6 +154,7 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
     m_menu->addAction(m_menuItems[Open]);
     m_menu->addAction(m_menuItems[ShowInExplorer]);
     m_menu->addAction(m_menuItems[OpenWithDefault]);
+    m_menu->addAction(m_menuItems[OpenFolder]);
     m_menu->addAction(m_menuItems[ReloadFile]);
     m_menu->addAction(m_menuItems[Save]);
     m_menu->addAction(m_menuItems[SaveAs]);
@@ -201,6 +210,7 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
             KNUtil::showInGraphicalShell(editor->filePath());
         }
     });
+    connect(m_menuItems[OpenFolder], &QAction::triggered, this, &KNFileManager::onOpenFolder);
     connect(m_menuItems[OpenWithDefault], &QAction::triggered, [=]
     {
         //Get the current editor.
@@ -467,6 +477,7 @@ void KNFileManager::retranslate()
     m_menuItems[Open]->setText(tr("&Open..."));
     m_menuItems[ShowInExplorer]->setText(tr("Open Containing Folder"));
     m_menuItems[OpenWithDefault]->setText(tr("Open in Default Viewer"));
+    m_menuItems[OpenFolder]->setText(tr("Open Folder..."));
     m_menuItems[ReloadFile]->setText(tr("Re&load from Disk"));
     m_menuItems[Save]->setText(tr("&Save"));
     m_menuItems[SaveAs]->setText(tr("Save &As..."));
@@ -486,6 +497,18 @@ void KNFileManager::retranslate()
     m_menuItems[Exit]->setText(tr("E&xit"));
 
     m_subMenus[CloseMore]->setTitle(tr("Close More"));
+}
+
+void KNFileManager::onOpenFolder()
+{
+    //Open the folder.
+    QString folderPath = QFileDialog::getExistingDirectory(this, tr("Select Folder"));
+    if(folderPath.isEmpty())
+    {
+        return;
+    }
+    //Set the folder panel path.
+    m_viewMenu->setAndShowFolder(folderPath);
 }
 
 void KNFileManager::onShowSwitcher()

@@ -18,6 +18,7 @@
 class QDockWidget;
 class KNDocumentMap;
 class KNTextEditor;
+class KNFolderPanel;
 /*!
  * \brief The KNViewMenu class provides the view menu of the application.
  */
@@ -35,7 +36,7 @@ public:
         CollapseCurrentLevel,
         UncollapseCurrentLevel,
         Summary,
-        FolderAsWorkspace,
+        FolderPanel,
         DocumentMap,
         FunctionList,
         TextDirectionRTL,
@@ -81,6 +82,18 @@ public:
      * \param editor The editor pointer.
      */
     void setEditor(KNTextEditor *editor);
+
+    /*!
+     * \brief Set the folder path to folder panel and show it.
+     * \param folderPath The path of the folder.
+     */
+    void setAndShowFolder(const QString &folderPath);
+
+    /*!
+     * \brief Get the folder panel widget.
+     * \return The folder panel widget pointer.
+     */
+    KNFolderPanel *folderPanel() const;
 
 signals:
     /*!
@@ -136,8 +149,9 @@ private:
 
     QAction *m_menuItems[ViewMenuItemCount];
     QMenu *m_subMenus[ViewSubMenuCount];
-    QDockWidget *m_mapDockWidget;
+    QDockWidget *m_mapDockWidget, *m_folderDockWidget;
     KNDocumentMap *m_docMap;
+    KNFolderPanel *m_folderPanel;
 };
 
 #endif // KNVIEWMENU_H
