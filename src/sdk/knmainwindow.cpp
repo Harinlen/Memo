@@ -23,6 +23,7 @@
 #include "kneditmenu.h"
 #include "knsearchmenu.h"
 #include "knviewmenu.h"
+#include "knrunmenu.h"
 #include "knhelpmenu.h"
 
 #include "knmainwindow.h"
@@ -70,6 +71,7 @@ void KNMainWindow::initalize()
     menuBar()->addMenu(m_fileManager->viewMenu());
     menuBar()->addMenu(m_fileManager->codecMenu());
     menuBar()->addMenu(m_fileManager->toolMenu());
+    menuBar()->addMenu(new KNRunMenu(this));
     menuBar()->addMenu(m_fileManager->windowsMenu());
     menuBar()->addMenu(new KNHelpMenu(this));
     //Configure the toolbar.

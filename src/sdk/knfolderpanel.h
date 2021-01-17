@@ -21,6 +21,10 @@ class QFileSystemModel;
 class QTreeView;
 class QPushButton;
 class KNFileManager;
+/*!
+ * \brief The KNFolderPanel class provides a folder panel to open and trace the
+ * opened file of the file manager.
+ */
 class KNFolderPanel : public QWidget
 {
     Q_OBJECT
@@ -31,13 +35,30 @@ public:
      */
     explicit KNFolderPanel(QWidget *parent = nullptr);
 
+    /*!
+     * \brief Set the file manager instance.
+     * \param fileManager The file instance pointer.
+     */
     void setFileManager(KNFileManager *fileManager);
 
 signals:
+    /*!
+     * \brief When a file is require to be opened in the file manager, this
+     * signal is emitted.
+     * \param filePath The file path string.
+     */
     void requireOpen(const QString &filePath);
 
 public slots:
+    /*!
+     * \brief Set the root folder path.
+     * \param path The path of the display folder.
+     */
     void setFolder(const QString &path);
+
+    /*!
+     * \brief When the file tracing is enabled, this function should be called.
+     */
     void onTraceFile();
 
 private slots:

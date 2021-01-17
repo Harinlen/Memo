@@ -76,86 +76,91 @@ KNConfigure *KNConfigure::getConfigure(const QString &key)
     return subConfigure;
 }
 
+QVariant KNConfigure::parseData(const QJsonValue &value,
+                                const QVariant &defaultValue)
+{
+    //Check the type of the value.
+    switch(value.type())
+    {
+    //If the value type is bool, double, string and array, translate the
+    //data to the specific type and use the default construct function of
+    //the QVariant to build the value.
+    case QJsonValue::Bool:
+        return value.toBool();
+    case QJsonValue::Double:
+        return value.toDouble();
+    case QJsonValue::String:
+        return value.toString();
+    case QJsonValue::Array:
+        return QVariant(value.toArray());
+    //If the type of the value is object, we have to find whether the object
+    //contains a key value called "Type"
+    case QJsonValue::Object:
+    {
+        QJsonObject valueObject=value.toObject();
+        if(valueObject.contains("Type"))
+        {
+            //Find the type string data in the hash list.
+            int objectType=
+                    m_typeList.value(valueObject.value("Type").toString(),
+                                     -1);
+            //If we cannot find the object type(-1), return the value as a
+            //object.
+            if(objectType==-1)
+            {
+                return valueObject;
+            }
+            //Parse the object according to the type.
+            switch(objectType)
+            {
+            case Font:
+            {
+                QFont valueFont=QApplication::font();
+                valueFont.setFamily(valueObject.value("Family").toString());
+                valueFont.setPixelSize(valueObject.value(
+                                           "Size").toDouble());
+                valueFont.setBold(valueObject.value("Bold").toBool());
+                valueFont.setItalic(valueObject.value("Italic").toBool());
+                valueFont.setUnderline(valueObject.value(
+                                           "Underline").toBool());
+                valueFont.setStrikeOut(valueObject.value(
+                                           "Strikeout").toBool());
+                valueFont.setKerning(valueObject.value("Kerning").toBool());
+                return QVariant::fromValue(valueFont);
+            }
+            case Shortcut:
+            {
+                //Parse the value from the object.
+                QKeySequence valueShortcut(
+                            valueObject.value("Key").toString(),
+                            QKeySequence::PortableText);
+                //Give back the value data.
+                return QVariant::fromValue(valueShortcut);
+            }
+            case CustomObject:
+            {
+                //Simply get the object data back.
+                return valueObject;
+            }
+            }
+        }
+        return valueObject;
+    }
+    //The last type of the data is Null and Undefined. Return the default
+    //value.
+    default:
+        return defaultValue;
+    }
+}
+
 QVariant KNConfigure::data(const QString &key,
                            const QVariant &defaultValue)
 {
     //Find the key in the data object.
     if(m_dataObject.contains(key))
     {
-        //Get the data first, if the data is .
-        QJsonValue value=m_dataObject.value(key);
-        //Check the type of the value.
-        switch(value.type())
-        {
-        //If the value type is bool, double, string and array, translate the
-        //data to the specific type and use the default construct function of
-        //the QVariant to build the value.
-        case QJsonValue::Bool:
-            return value.toBool();
-        case QJsonValue::Double:
-            return value.toDouble();
-        case QJsonValue::String:
-            return value.toString();
-        case QJsonValue::Array:
-            return QVariant(value.toArray());
-        //If the type of the value is object, we have to find whether the object
-        //contains a key value called "Type"
-        case QJsonValue::Object:
-        {
-            QJsonObject valueObject=value.toObject();
-            if(valueObject.contains("Type"))
-            {
-                //Find the type string data in the hash list.
-                int objectType=
-                        m_typeList.value(valueObject.value("Type").toString(),
-                                         -1);
-                //If we cannot find the object type(-1), return the value as a
-                //object.
-                if(objectType==-1)
-                {
-                    return valueObject;
-                }
-                //Parse the object according to the type.
-                switch(objectType)
-                {
-                case Font:
-                {
-                    QFont valueFont=QApplication::font();
-                    valueFont.setFamily(valueObject.value("Family").toString());
-                    valueFont.setPixelSize(valueObject.value(
-                                               "Size").toDouble());
-                    valueFont.setBold(valueObject.value("Bold").toBool());
-                    valueFont.setItalic(valueObject.value("Italic").toBool());
-                    valueFont.setUnderline(valueObject.value(
-                                               "Underline").toBool());
-                    valueFont.setStrikeOut(valueObject.value(
-                                               "Strikeout").toBool());
-                    valueFont.setKerning(valueObject.value("Kerning").toBool());
-                    return QVariant::fromValue(valueFont);
-                }
-                case Shortcut:
-                {
-                    //Parse the value from the object.
-                    QKeySequence valueShortcut(
-                                valueObject.value("Key").toString(),
-                                QKeySequence::PortableText);
-                    //Give back the value data.
-                    return QVariant::fromValue(valueShortcut);
-                }
-                case CustomObject:
-                {
-                    //Simply get the object data back.
-                    return valueObject;
-                }
-                }
-            }
-            return valueObject;
-        }
-        //The last type of the data is Null and Undefined. Return the default
-        //value.
-        default:
-            return defaultValue;
-        }
+        //Get and parse the data first.
+        return parseData(m_dataObject.value(key), defaultValue);
     }
     //Save the data to the object.
     setData(key, defaultValue);

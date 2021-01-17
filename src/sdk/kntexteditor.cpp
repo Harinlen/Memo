@@ -1402,16 +1402,12 @@ bool KNTextEditor::loadToDocument(const QString &filePath,
     targetFile.close();
     //Decode the file from the codec.
     QString fileText;
-    if(*codec)
+    if(!*codec)
     {
-        //Use the specific codec to load the file.
-        fileText = (*codec)->toUnicode(fileContent);
+        *codec = QTextCodec::codecForLocale();
     }
-    else
-    {
-        //Smart decode.
-        *codec = KNTextEditor::codecFromData(fileContent, &fileText);
-    }
+    //Use the specific codec to load the file.
+    fileText = (*codec)->toUnicode(fileContent);
     //Set the file text to document.
     document->setPlainText(fileText);
     return true;

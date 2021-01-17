@@ -62,6 +62,16 @@ public:
     KNConfigure *getConfigure(const QString &key);
 
     /*!
+     * \brief Parse the JSON format encoded data into a specific type of data.
+     * If the configure cannot parse the data, it will return the default value.
+     * \param value The JSON value.
+     * \param defaultValue The default value of the specific data.
+     * \return The data in QVariant.
+     */
+    static QVariant parseData(const QJsonValue &value,
+                              const QVariant &defaultValue = QVariant());
+
+    /*!
      * \brief Get a data from the configure via the key. If the configure cannot
      * find the key, it will return the default value. The default value of the
      * default value is QVariant().

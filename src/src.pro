@@ -107,6 +107,8 @@ HEADERS += \
     sdk/knlockedfile.h \
     sdk/knmainwindow.h \
     sdk/knrecentfilerecorder.h \
+    sdk/knrundialog.h \
+    sdk/knrunmenu.h \
     sdk/knsearchbar.h \
     sdk/knsearchhighlighter.h \
     sdk/knsearchmenu.h \
@@ -160,6 +162,8 @@ SOURCES += \
     sdk/knlockedfile.cpp \
     sdk/knmainwindow.cpp \
     sdk/knrecentfilerecorder.cpp \
+    sdk/knrundialog.cpp \
+    sdk/knrunmenu.cpp \
     sdk/knsearchbar.cpp \
     sdk/knsearchhighlighter.cpp \
     sdk/knsearchmenu.cpp \
