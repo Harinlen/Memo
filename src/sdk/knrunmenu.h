@@ -29,6 +29,7 @@ signals:
 
 private slots:
     void retranslate();
+    void onAddAction(QAction *action);
 
 private:
     QAction *actionFromObject(const QJsonObject &obj);
@@ -38,9 +39,7 @@ private:
         RunMenuItemCount
     };
     KNRunDialog *m_runDialog;
-    QVector<QAction *> m_runActions;
     QAction *m_actions[RunMenuItemCount], *m_commandSeperator;
-    KNConfigure *m_runConfig;
 };
 
 #endif // KNRUNMENU_H

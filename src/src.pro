@@ -83,6 +83,7 @@ RESOURCES += \
     resource/resource.qrc
 
 HEADERS += \
+    sdk/knactionedit.h \
     sdk/kncharpanel.h \
     sdk/knclipboardhistory.h \
     sdk/kncodecdialog.h \
@@ -138,6 +139,7 @@ HEADERS += \
 
 SOURCES += \
     main.cpp \
+    sdk/knactionedit.cpp \
     sdk/kncharpanel.cpp \
     sdk/knclipboardhistory.cpp \
     sdk/kncodecdialog.cpp \

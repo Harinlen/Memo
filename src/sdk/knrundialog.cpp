@@ -10,6 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * license file for more details.
  */
+#include <QAction>
 #include <QBoxLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -18,6 +19,7 @@
 
 #include "knutil.h"
 #include "knuimanager.h"
+#include "knactionedit.h"
 
 #include "knrundialog.h"
 
@@ -28,7 +30,8 @@ KNRunDialog::KNRunDialog(QWidget *parent) :
     m_run(new QPushButton(this)),
     m_save(new QPushButton(this)),
     m_cancel(new QPushButton(this)),
-    m_select(new QPushButton("...", this))
+    m_select(new QPushButton("...", this)),
+    m_actionEdit(new KNActionEdit(this))
 {
     //Construct the widget.
     QBoxLayout *layout = new QBoxLayout(QBoxLayout::TopToBottom, this);
@@ -54,6 +57,7 @@ KNRunDialog::KNRunDialog(QWidget *parent) :
     //Link buttons.
     connect(m_select, &QPushButton::clicked, this, &KNRunDialog::onSelect);
     connect(m_run, &QPushButton::clicked, this, &KNRunDialog::onRun);
+    connect(m_save, &QPushButton::clicked, this, &KNRunDialog::onSaveAction);
     connect(m_cancel, &QPushButton::clicked, this, &KNRunDialog::close);
     //Add translator.
     knUi->addTranslate(this, &KNRunDialog::retranslate);
@@ -77,7 +81,7 @@ void KNRunDialog::onSelect()
     //Check the command path.
     if(!commandPath.isEmpty())
     {
-        m_command->setCurrentText(commandPath);
+        m_command->setCurrentText(QDir::toNativeSeparators(commandPath));
     }
     //Set focus to command.
     m_command->setFocus();
@@ -89,4 +93,45 @@ void KNRunDialog::onRun()
     close();
     //Run the command.
     KNUtil::openLocalFile(m_command->currentText());
+}
+
+void KNRunDialog::onSaveAction()
+{
+    if(m_command->currentText().isEmpty())
+    {
+        return;
+    }
+    //Clear the editor.
+    m_actionEdit->clear();
+    //Run the dialog.
+    m_actionEdit->exec();
+    //Fetch the action status.
+    if(m_actionEdit->result() == QDialog::Accepted)
+    {
+        QAction *action = new QAction(this);
+        action->setText(m_actionEdit->actionName());
+        action->setShortcut(m_actionEdit->actionKeySequence());
+        //Link the action to the member.
+        connect(action, &QAction::triggered, this, &KNRunDialog::onCommandMap);
+        //Now construct the action.
+        m_actions.append(action);
+        m_commandMap.insert(action, m_command->currentText());
+        //Add action to menu.
+        emit requireAddAction(action);
+        //Close the window.
+        close();
+    }
+}
+
+void KNRunDialog::onCommandMap()
+{
+    //Check the command map.
+    QAction *action = static_cast<QAction *>(sender());
+    //Find the command in the map.
+    QString command = m_commandMap.value(action, QString());
+    if(!command.isEmpty())
+    {
+        //Execute the command.
+        KNUtil::openLocalFile(command);
+    }
 }

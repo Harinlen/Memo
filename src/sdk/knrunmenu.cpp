@@ -27,8 +27,7 @@
 
 KNRunMenu::KNRunMenu(QWidget *parent) :
     QMenu(parent),
-    m_runDialog(new KNRunDialog(parent)),
-    m_runConfig(knConf->userConfigure())
+    m_runDialog(new KNRunDialog(parent))
 {
     //Construct actions.
     for(int i=0; i<RunMenuItemCount; ++i)
@@ -38,13 +37,9 @@ KNRunMenu::KNRunMenu(QWidget *parent) :
     //Add actions.
     addAction(m_actions[Execute]);
     m_commandSeperator = addSeparator();
-    //Construct the action based on the configure.
-    auto commandArray = m_runConfig->data(RUN_FIELD).toJsonArray();
-    for(int i=0; i<commandArray.size(); ++i)
-    {
-        //Construct the action from the action.
-        ;
-    }
+    //Link the run dialog.
+    connect(m_runDialog, &KNRunDialog::requireAddAction,
+            this, &KNRunMenu::onAddAction);
     //Link actions.
     connect(m_actions[Execute], &QAction::triggered,
             m_runDialog, &KNRunDialog::show);
@@ -57,6 +52,11 @@ void KNRunMenu::retranslate()
     setTitle(tr("&Run"));
     //Execute a program.
     m_actions[Execute]->setText(tr("&Run..."));
+}
+
+void KNRunMenu::onAddAction(QAction *action)
+{
+    addAction(action);
 }
 
 QAction *KNRunMenu::actionFromObject(const QJsonObject &obj)

@@ -13,11 +13,14 @@
 #ifndef KNRUNDIALOG_H
 #define KNRUNDIALOG_H
 
+#include <QHash>
+
 #include <QDialog>
 
 class QLabel;
 class QComboBox;
 class QPushButton;
+class KNActionEdit;
 /*!
  * \brief The KNRunDialog class provides the run dialog of the Run menu.
  */
@@ -32,16 +35,22 @@ public:
     explicit KNRunDialog(QWidget *parent = nullptr);
 
 signals:
+    void requireAddAction(QAction *action);
 
 private slots:
     void retranslate();
     void onSelect();
     void onRun();
+    void onSaveAction();
+    void onCommandMap();
 
 private:
     QLabel *m_hint;
     QComboBox *m_command;
     QPushButton *m_run, *m_save, *m_cancel, *m_select;
+    KNActionEdit *m_actionEdit;
+    QVector<QAction *> m_actions;
+    QHash<QAction *, QString> m_commandMap;
 };
 
 #endif // KNRUNDIALOG_H
