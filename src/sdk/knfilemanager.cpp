@@ -468,6 +468,18 @@ void KNFileManager::showCodecDialog()
     }
 }
 
+void KNFileManager::showEvent(QShowEvent *event)
+{
+    //Check the tab bar count.
+    if(!m_tabBar->count())
+    {
+        //Create a new file.
+        createTab();
+    }
+    //Show the file manager.
+    QWidget::showEvent(event);
+}
+
 void KNFileManager::retranslate()
 {
     //Update the text.
@@ -913,6 +925,14 @@ void KNFileManager::printUseDefault()
 
 int KNFileManager::createFileTab(const QString &filePath)
 {
+    //Check whether the current text editor is an empty file.
+    auto editor = currentEditor();
+    if(editor && !editor->isOnDisk() && !editor->document()->isModified())
+    {
+        //We could use the current editor.
+        editor->loadFrom(filePath);
+        return m_tabBar->currentIndex();
+    }
     //Update the tab id.
     return createEditorTab(new KNTextEditor(
                                QString(), filePath, QString(), this));

@@ -65,8 +65,17 @@ QKeySequence KNActionEdit::actionKeySequence() const
     return m_shortcutEdit->keySequence();
 }
 
+void KNActionEdit::showEvent(QShowEvent *event)
+{
+    QDialog::showEvent(event);
+    //Set focus to name edit.
+    m_nameEdit->setFocus();
+}
+
 void KNActionEdit::retranslate()
 {
+    setWindowTitle(tr("Action Editor"));
+    //Update widget text.
     m_nameEdit->setPlaceholderText(tr("Name"));
     m_shortcut->setText(tr("Shortcut"));
     m_okay->setText(tr("OK"));

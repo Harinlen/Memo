@@ -205,6 +205,9 @@ public slots:
     void setFocusOnEditor();
     void showCodecDialog();
 
+protected:
+    void showEvent(QShowEvent *event) override;
+
 private slots:
     void retranslate();
     void onOpenFolder();

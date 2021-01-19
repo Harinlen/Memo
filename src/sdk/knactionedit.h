@@ -44,6 +44,9 @@ public:
 
 signals:
 
+protected:
+    void showEvent(QShowEvent *event) override;
+
 private slots:
     void retranslate();
     void onOkay();

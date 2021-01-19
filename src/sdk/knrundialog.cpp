@@ -15,6 +15,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QComboBox>
+#include <QLineEdit>
 #include <QFileDialog>
 
 #include "knutil.h"
@@ -63,6 +64,14 @@ KNRunDialog::KNRunDialog(QWidget *parent) :
     knUi->addTranslate(this, &KNRunDialog::retranslate);
 }
 
+void KNRunDialog::showEvent(QShowEvent *event)
+{
+    QDialog::showEvent(event);
+    //Set focus on line edit.
+    m_command->setFocus();
+    m_command->lineEdit()->selectAll();
+}
+
 void KNRunDialog::retranslate()
 {
     setWindowTitle(tr("Run..."));
@@ -108,30 +117,12 @@ void KNRunDialog::onSaveAction()
     //Fetch the action status.
     if(m_actionEdit->result() == QDialog::Accepted)
     {
-        QAction *action = new QAction(this);
+        QAction *action = new QAction(parent());
         action->setText(m_actionEdit->actionName());
         action->setShortcut(m_actionEdit->actionKeySequence());
-        //Link the action to the member.
-        connect(action, &QAction::triggered, this, &KNRunDialog::onCommandMap);
-        //Now construct the action.
-        m_actions.append(action);
-        m_commandMap.insert(action, m_command->currentText());
         //Add action to menu.
-        emit requireAddAction(action);
+        emit requireAddAction(action, m_command->currentText());
         //Close the window.
         close();
-    }
-}
-
-void KNRunDialog::onCommandMap()
-{
-    //Check the command map.
-    QAction *action = static_cast<QAction *>(sender());
-    //Find the command in the map.
-    QString command = m_commandMap.value(action, QString());
-    if(!command.isEmpty())
-    {
-        //Execute the command.
-        KNUtil::openLocalFile(command);
     }
 }

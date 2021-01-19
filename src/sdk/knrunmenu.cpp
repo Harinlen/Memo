@@ -12,6 +12,7 @@
  */
 #include <QJsonArray>
 
+#include "knutil.h"
 #include "knuimanager.h"
 #include "knrundialog.h"
 #include "knconfigure.h"
@@ -54,15 +55,25 @@ void KNRunMenu::retranslate()
     m_actions[Execute]->setText(tr("&Run..."));
 }
 
-void KNRunMenu::onAddAction(QAction *action)
+void KNRunMenu::onAddAction(QAction *action, QString commandLine)
 {
     addAction(action);
+    //Link the action to the member.
+    connect(action, &QAction::triggered, this, &KNRunMenu::onExecute);
+    //Now construct the action.
+    m_userActions.append(action);
+    m_commandMap.insert(action, commandLine);
 }
 
-QAction *KNRunMenu::actionFromObject(const QJsonObject &obj)
+void KNRunMenu::onExecute()
 {
-    //Construct the action information.
-    QAction *action = new QAction(obj.value(CMD_TITLE).toString(), this);
-    //Add action information.
-    return action;
+    //Check the command map.
+    QAction *action = static_cast<QAction *>(sender());
+    //Find the command in the map.
+    QString command = m_commandMap.value(action, QString());
+    if(!command.isEmpty())
+    {
+        //Execute the command.
+        KNUtil::openLocalFile(command);
+    }
 }

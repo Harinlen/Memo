@@ -13,6 +13,7 @@
 #ifndef KNRUNMENU_H
 #define KNRUNMENU_H
 
+#include <QHash>
 #include <QJsonObject>
 
 #include <QMenu>
@@ -29,10 +30,10 @@ signals:
 
 private slots:
     void retranslate();
-    void onAddAction(QAction *action);
+    void onAddAction(QAction *action, QString commandLine);
+    void onExecute();
 
 private:
-    QAction *actionFromObject(const QJsonObject &obj);
     enum RunMenuItems
     {
         Execute,
@@ -40,6 +41,8 @@ private:
     };
     KNRunDialog *m_runDialog;
     QAction *m_actions[RunMenuItemCount], *m_commandSeperator;
+    QVector<QAction *> m_userActions;
+    QHash<QAction *, QString> m_commandMap;
 };
 
 #endif // KNRUNMENU_H

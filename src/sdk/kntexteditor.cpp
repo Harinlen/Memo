@@ -410,6 +410,23 @@ void KNTextEditor::keyPressEvent(QKeyEvent *event)
     else if(event == QKeySequence::Cut) { cut(); event->accept(); return; }
     else if(event == QKeySequence::Copy) { copy(); event->accept(); return; }
     else if(event == QKeySequence::Paste) { paste(); event->accept(); return; }
+    //Shortcut key map:
+    /*
+     * Key maps:
+     * Alt + Left / Right           : Not defined.
+     * Shift + Left / Right         : Select.
+     * Ctrl + Left / Right          : Word left / right move
+     * Ctrl + Alt + Left / Right    : Not defined.
+     * Ctrl + Shift + Left / Right  : Select to left / right.
+     * Alt + Shift + Left / Right   : Block select to left / right.
+     *
+     * Alt + Up / Down              : Not defined.
+     * Shift + Up / Down            : Select.
+     * Ctrl + Up / Down             : Vertical Scroll Up / Down
+     * Ctrl + Alt + Up / Down       : Copy the current line to upper/lower line.
+     * Ctrl + Shift + Up / Down     : Move current line to upper/lower line.
+     * Alt + Shit + Up / Down       : Block select to up / down.
+     */
     //Check whether the event is sent to us.
     switch(event->key())
     {
