@@ -219,6 +219,9 @@ public:
      */
     void setHighlightCursor(bool yes);
 
+    void moveCurrentBlockUp();
+    void moveCurrentBlockDown();
+
 signals:
     /*!
      * \brief When the title of the document is changed, this signal is emitted.
@@ -459,19 +462,17 @@ private:
     };
     void quickSearchUi(const QTextBlock &block);
     void quickSearchCheck(const QTextBlock &block);
-    QList<QTextCursor> columnCopy();
-    QList<QTextCursor> columnSelectionText(QString &selectionText) const;
     void updateHighlighter(KNSyntaxHighlighter *highlighter = nullptr);
     QString levelLevelString(int spaceLevel, int tabSpacing);
     static int tabSpacePosition(const QTextBlock &block, int pos,
                                 int tabSpacing);
     void setFilePath(const QString &filePath);
     void updateViewportMargins();
-    void setColumnCursor(const QTextCursor &cursor);
-    void setColumnCursor(int blockNum, int offset);
-    void removeExtraCursor(int id);
-    void clearColumnCursor();
-    QList<QTextCursor> columnCursors() const;
+//    QList<QTextCursor> columnCopy();
+//    QList<QTextCursor> columnSelectionText(QString &selectionText) const;
+//    void setColumnCursor(const QTextCursor &cursor);
+//    void setColumnCursor(int blockNum, int offset);
+//    void clearColumnCursor();
 
     QScopedPointer<KNTextSearcher> m_quickSearchPrev, m_quickSearchNext;
     QFuture<void> m_futurePrev, m_futureNext;
@@ -487,7 +488,6 @@ private:
     QByteArray m_codecName;
     KNTextEditorPanel *m_panel;
     KNSyntaxHighlighter *m_highlighter;
-    int m_columnBlockNumber, m_columnOffset;
     int m_editorOptions;
 
 };

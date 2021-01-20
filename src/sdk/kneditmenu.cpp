@@ -525,48 +525,7 @@ void KNEditMenu::onLineMoveUp()
 {
     if(m_editor)
     {
-        auto tc = m_editor->textCursor();
-        //Ignore when there is only one line.
-        if(m_editor->blockCount() == 1 || tc.blockNumber() == 0)
-        {
-            return;
-        }
-        tc.beginEditBlock();
-        auto doc = m_editor->document();
-        //Change the selection of the line.
-        if(tc.hasSelection())
-        {
-            //Extract the text block
-            const QTextBlock &blockStart = doc->findBlock(tc.selectionStart()),
-                    &blockEnd = doc->findBlock(tc.selectionEnd());
-            //Change the tc selection.
-            tc.setPosition(blockStart.position());
-            tc.setPosition(blockEnd.position() + blockEnd.length() - 1,
-                           QTextCursor::KeepAnchor);
-        }
-        else
-        {
-            const QTextBlock &block = tc.block();
-            //Select the current block.
-            tc.setPosition(block.position());
-            tc.setPosition(block.position() + block.length() - 1,
-                           QTextCursor::KeepAnchor);
-        }
-        //Move one block above.
-        QString selectedLines = tc.selectedText();
-        tc.removeSelectedText();
-        tc.movePosition(QTextCursor::PreviousBlock);
-        tc.movePosition(QTextCursor::EndOfBlock);
-        tc.deleteChar();
-        tc.movePosition(QTextCursor::StartOfBlock);
-        int currentPos = tc.position();
-        tc.insertText(selectedLines);
-        tc.insertText("\n");
-        tc.movePosition(QTextCursor::PreviousCharacter);
-        tc.setPosition(currentPos, QTextCursor::KeepAnchor);
-        tc.endEditBlock();
-        //Set the text cursor.
-        m_editor->setTextCursor(tc);
+        m_editor->moveCurrentBlockUp();
     }
 }
 
@@ -574,64 +533,7 @@ void KNEditMenu::onLineMoveDown()
 {
     if(m_editor)
     {
-        auto tc = m_editor->textCursor();
-        //Ignore when there is only one line.
-        if(m_editor->blockCount() == 1)
-        {
-            return;
-        }
-        auto doc = m_editor->document();
-        //Change the selection of the line.
-        if(tc.hasSelection())
-        {
-            //Extract the text block
-            QTextBlock blockStart = doc->findBlock(tc.selectionStart()),
-                    blockEnd = doc->findBlock(tc.selectionEnd());
-            //Check whether the block end already reaches the last line.
-            if(blockEnd.blockNumber() == doc->blockCount() - 1)
-            {
-                //Check whether the block end is at the beginning of the next
-                //block.
-                if(tc.selectionEnd() != blockEnd.position())
-                {
-                    return;
-                }
-                //Treat the block end as its previous block.
-                blockEnd = blockEnd.previous();
-            }
-                tc.beginEditBlock();
-            //Change the tc selection.
-            tc.setPosition(blockStart.position());
-            tc.setPosition(blockEnd.position() + blockEnd.length() - 1,
-                           QTextCursor::KeepAnchor);
-        }
-        else
-        {
-            //Check if it is already the last line.
-            if(tc.blockNumber() == doc->blockCount() - 1)
-            {
-                return;
-            }
-            //Start move.
-            tc.beginEditBlock();
-            const QTextBlock &block = tc.block();
-            //Select the current block.
-            tc.setPosition(block.position());
-            tc.setPosition(block.position() + block.length() - 1,
-                           QTextCursor::KeepAnchor);
-        }
-        //Move one block above.
-        QString selectedLines = tc.selectedText();
-        tc.removeSelectedText();
-        tc.deleteChar();
-        tc.movePosition(QTextCursor::EndOfBlock);
-        tc.insertText("\n");
-        int currentPos = tc.position();
-        tc.insertText(selectedLines);
-        tc.setPosition(currentPos, QTextCursor::KeepAnchor);
-        tc.endEditBlock();
-        //Set the text cursor.
-        m_editor->setTextCursor(tc);
+        m_editor->moveCurrentBlockDown();
     }
 }
 

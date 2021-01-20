@@ -200,7 +200,6 @@ KNTextEditor::KNTextEditor(const QString &titleName,
     m_filePath(QString()),
     m_codecName(codec.toLatin1()),
     m_panel(new KNTextEditorPanel(this)),
-    m_columnBlockNumber(-1), m_columnOffset(-1),
     m_editorOptions(HighlightCursor | CursorDisplay | LineNumberDisplay)
 {
     //Set properties.
@@ -411,29 +410,13 @@ void KNTextEditor::keyPressEvent(QKeyEvent *event)
     else if(event == QKeySequence::Copy) { copy(); event->accept(); return; }
     else if(event == QKeySequence::Paste) { paste(); event->accept(); return; }
     //Shortcut key map:
-    /*
-     * Key maps:
-     * Alt + Left / Right           : Not defined.
-     * Shift + Left / Right         : Select.
-     * Ctrl + Left / Right          : Word left / right move
-     * Ctrl + Alt + Left / Right    : Not defined.
-     * Ctrl + Shift + Left / Right  : Select to left / right.
-     * Alt + Shift + Left / Right   : Block select to left / right.
-     *
-     * Alt + Up / Down              : Not defined.
-     * Shift + Up / Down            : Select.
-     * Ctrl + Up / Down             : Vertical Scroll Up / Down
-     * Ctrl + Alt + Up / Down       : Copy the current line to upper/lower line.
-     * Ctrl + Shift + Up / Down     : Move current line to upper/lower line.
-     * Alt + Shit + Up / Down       : Block select to up / down.
-     */
     //Check whether the event is sent to us.
     switch(event->key())
     {
     case Qt::Key_Escape:
     {
         //Clear the extra text cursor.
-        clearColumnCursor();
+//        clearColumnCursor();
         //Update viewport.
         viewport()->update();
         //Update the cursor.
@@ -473,8 +456,14 @@ void KNTextEditor::keyPressEvent(QKeyEvent *event)
         setOverwriteMode(!overwriteMode());
         return;
     }
+    /*
+     * Default list:
+     * Alt + Up / Down: Not defined.
+     * Shift + Up / Down: Select. (Default)
+     */
     case Qt::Key_Up:
     case Qt::Key_Down:
+        //Ctrl + Up / Down: Vertical Scroll Up / Down
         if(event->modifiers() == KNG::CTRL)
         {
             //Just change the vertical scroll bar.
@@ -489,214 +478,213 @@ void KNTextEditor::keyPressEvent(QKeyEvent *event)
             event->accept();
             return;
         }
-        //If alt modifiters is applied, enter vertical mode.
-        if(event->modifiers() & KNG::ALT)
+        //Ctrl + Alt + Up / Down: Copy the current line to upper/lower line.
+        if(event->modifiers() == (KNG::CTRL | KNG::ALT))
         {
-            if(m_columnBlockNumber == -1)
+            //Disable multi-cursor mode.
+            //!FIXME: Add codes here;
+            //Copy the line at specific position.
+            QTextCursor tc = textCursor();
+            QTextBlock block = tc.block();
+            tc.beginEditBlock();
+            if(event->key() == Qt::Key_Up)
             {
-                QTextCursor tc = textCursor();
-                //Check the text cursor selection pos.
-                if(tc.hasSelection())
-                {
-                    QTextCursor startCursor = textCursor();
-                    //Check whether the cursor is at the start or the end.
-                    startCursor.setPosition(tc.position() == tc.selectionStart() ?
-                                                tc.selectionEnd():
-                                                tc.selectionStart());
-                    setColumnCursor(startCursor);
-                }
-                else
-                {
-                    //Set the column cursor.
-                    setColumnCursor(textCursor());
-                }
-            }
-            //Remove the modifiers.
-            event->setModifiers(Qt::NoModifier);
-        }
-        else
-        {
-            //We have to clear column selection.
-            clearColumnCursor();
-        }
-        break;
-    case Qt::Key_Left:
-    case Qt::Key_Right:
-    {
-        //Check modifiers.
-        if(event->modifiers() == Qt::NoModifier)
-        {
-            //Backup the previous pos.
-            const int currentBlockNum = textCursor().blockNumber();
-            //Do movement.
-            QPlainTextEdit::keyPressEvent(event);
-            //Check whether the block num changed.
-            if(currentBlockNum != textCursor().blockNumber())
-            {
-                //Clear the column selection.
-                clearColumnCursor();
+                //Record the current position.
+                //Insert the text to the next line.
+                tc.movePosition(QTextCursor::EndOfBlock);
+                tc.insertBlock();
+                tc.insertText(block.text());
+                tc.setPosition(block.position());
+                tc.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+                setTextCursor(tc);
             }
             else
             {
-                //Update the column selection position.
-                m_columnOffset = textCursor().positionInBlock();
-                updateExtraSelections();
+                //Insert the text to the previous line.
+                tc.movePosition(QTextCursor::StartOfBlock);
+                tc.insertText(block.text());
+                tc.insertBlock();
+                tc.movePosition(QTextCursor::EndOfBlock, QTextCursor::KeepAnchor);
+                setTextCursor(tc);
             }
+            tc.endEditBlock();
+            event->accept();
             return;
         }
-        //If alt modifiers is applied, enter vertical mode.
-        if(event->modifiers() & KNG::ALT)
+        //Ctrl + Shift + Up / Down: Move current line to upper/lower line.
+        if(event->modifiers() == (KNG::CTRL | KNG::SHIFT))
         {
-            //Remove ALT modifier first.
-            event->setModifiers(event->modifiers() & ~KNG::ALT);
-            //Check whether we have the start selection or not.
-            if(m_columnBlockNumber != -1)
+            //Disable multi-cursor mode.
+            //!FIXME: Add codes here;
+            //Call the slot here.
+            if(event->key() == Qt::Key_Up)
             {
-                //Remove the alt modifiers.
-                event->setModifiers(event->modifiers() &~KNG::SHIFT);
-                //Update the viewport.
-                viewport()->update();
+                moveCurrentBlockUp();
             }
+            else
+            {
+                moveCurrentBlockDown();
+            }
+            event->accept();
+            return;
         }
+        //Alt + Shift + Up / Down: Block select to up / down.
+        if(event->modifiers() == (KNG::ALT | KNG::SHIFT))
+        {
+            ;
+        }
+//        //If alt modifiters is applied, enter vertical mode.
+//        if(event->modifiers() & KNG::ALT)
+//        {
+//            if(m_columnBlockNumber == -1)
+//            {
+//                QTextCursor tc = textCursor();
+//                //Check the text cursor selection pos.
+//                if(tc.hasSelection())
+//                {
+//                    QTextCursor startCursor = textCursor();
+//                    //Check whether the cursor is at the start or the end.
+//                    startCursor.setPosition(tc.position() == tc.selectionStart() ?
+//                                                tc.selectionEnd():
+//                                                tc.selectionStart());
+//                    setColumnCursor(startCursor);
+//                }
+//                else
+//                {
+//                    //Set the column cursor.
+//                    setColumnCursor(textCursor());
+//                }
+//            }
+//            //Remove the modifiers.
+//            event->setModifiers(Qt::NoModifier);
+//        }
+//        else
+//        {
+//            //We have to clear column selection.
+//            clearColumnCursor();
+//        }
+        break;
+    /*
+     * Key maps:
+     * Alt + Left / Right           : Not defined.
+     * Shift + Left / Right         : Select.
+     * Ctrl + Left / Right         x: Word left / right move (Default)
+     * Ctrl + Alt + Left / Right    : Not defined.
+     * Ctrl + Shift + Left / Right x: Select to left / right word. (Default)
+     * Alt + Shift + Left / Right   : Block select to left / right.
+     */
+    case Qt::Key_Left:
+    case Qt::Key_Right:
+    {
+//        //Check modifiers.
+//        if(event->modifiers() == Qt::NoModifier)
+//        {
+//            //Backup the previous pos.
+//            const int currentBlockNum = textCursor().blockNumber();
+//            //Do movement.
+//            QPlainTextEdit::keyPressEvent(event);
+//            //Check whether the block num changed.
+//            if(currentBlockNum != textCursor().blockNumber())
+//            {
+//                //Clear the column selection.
+//                clearColumnCursor();
+//            }
+//            else
+//            {
+//                //Update the column selection position.
+//                m_columnOffset = textCursor().positionInBlock();
+//                updateExtraSelections();
+//            }
+//            return;
+//        }
+//        //If alt modifiers is applied, enter vertical mode.
+//        if(event->modifiers() & KNG::ALT)
+//        {
+//            //Remove ALT modifier first.
+//            event->setModifiers(event->modifiers() & ~KNG::ALT);
+//            //Check whether we have the start selection or not.
+//            if(m_columnBlockNumber != -1)
+//            {
+//                //Remove the alt modifiers.
+//                event->setModifiers(event->modifiers() &~KNG::SHIFT);
+//                //Update the viewport.
+//                viewport()->update();
+//            }
+//        }
         break;
     }
     case Qt::Key_Delete:
     case Qt::Key_Backspace:
-        if(m_columnBlockNumber != -1)
-        {
-            //In block edit, remove all.
-            QTextCursor tc = textCursor();
-            tc.beginEditBlock();
-            const int insBlock = tc.blockNumber();
-            int insOffset = tc.positionInBlock();
-            int textMove = 0;
-            //Generate all the input cursor.
-            auto ccs = columnCursors();
-            bool hasSelection = false;
-            //Keep the position.
-            for(auto cc : ccs)
-            {
-                if(cc.hasSelection())
-                {
-                    hasSelection = true;
-                }
-            }
-            //Check the final selections.
-            if(hasSelection)
-            {
-                insOffset = qMin(m_columnOffset, textCursor().positionInBlock());
-            }
-            //Check the key operation.
-            bool removePrev = event->key() == Qt::Key_Backspace;
-            //Insert the text.
-            for(auto cc : ccs)
-            {
-                //Check the selection.
-                if(cc.hasSelection())
-                {
-                    cc.removeSelectedText();
-                }
-                else
-                {
-                    //Check validation.
-                    if(removePrev)
-                    {
-                        if(cc.positionInBlock() > 0)
-                        {
-                            //Execute remove.
-                            cc.deletePreviousChar();
-                            textMove = 1;
-                        }
-                    }
-                    else
-                    {
-                        if(cc.positionInBlock() != cc.block().length() - 1)
-                        {
-                            //Execute the delete.
-                            cc.deleteChar();
-                        }
-                    }
-                }
-            }
-            insOffset -= textMove;
-            tc.setPosition(document()->findBlockByNumber(insBlock).position() + insOffset);
-            tc.endEditBlock();
-            //Update the column position.
-            m_columnOffset = insOffset;
-            //Update the extra selection.
-            updateExtraSelections();
-            event->accept();
-            return;
-        }
+
         break;
     default:
     {
         //Check column status.
-        if(m_columnBlockNumber != -1)
-        {
-            //Check whether the key press event is selection.
-            QString text = event->text();
-            if(!text.isEmpty() && (text.at(0).isPrint()))
-            {
-                QTextCursor tc = textCursor();
-                tc.beginEditBlock();
-                const int insBlock = tc.blockNumber();
-                int insOffset = tc.positionInBlock();
-                //Generate all the input cursor.
-                auto ccs = columnCursors();
-                for(auto cc : ccs)
-                {
-                    if(cc.blockNumber() == insBlock)
-                    {
-                        //Check whether the cursor has selection.
-                        if(cc.hasSelection())
-                        {
-                            //Update the insert offset.
-                            insOffset = cc.selectionStart() - cc.block().position();
-                        }
-                        break;
-                    }
-                }
-                //Insert the for each line.
-                for(auto cc : ccs)
-                {
-                    QString patchedText = text;
-                    int currentInsOffset = cc.positionInBlock();
-                    if(cc.hasSelection())
-                    {
-                        currentInsOffset = cc.selectionStart() - cc.block().position();
-                    }
-                    //Check the row selection.
-                    if(currentInsOffset < insOffset)
-                    {
-                        //Fill the space to the block
-                        patchedText.prepend(QString(insOffset - currentInsOffset, ' '));
-                    }
-                    //Check the text cursor position.
-                    cc.insertText(patchedText);
-                }
-                tc.setPosition(document()->findBlockByNumber(insBlock).position() +
-                               insOffset + text.length());
-                tc.endEditBlock();
-                //Update the column position.
-                m_columnOffset = tc.positionInBlock();
-                //Update the extra selection.
-                updateExtraSelections();
-                event->accept();
-                return;
-            }
-        }
+//        if(m_columnBlockNumber != -1)
+//        {
+//            //Check whether the key press event is selection.
+//            QString text = event->text();
+//            if(!text.isEmpty() && (text.at(0).isPrint()))
+//            {
+//                QTextCursor tc = textCursor();
+//                tc.beginEditBlock();
+//                const int insBlock = tc.blockNumber();
+//                int insOffset = tc.positionInBlock();
+//                //Generate all the input cursor.
+//                auto ccs = columnCursors();
+//                for(auto cc : ccs)
+//                {
+//                    if(cc.blockNumber() == insBlock)
+//                    {
+//                        //Check whether the cursor has selection.
+//                        if(cc.hasSelection())
+//                        {
+//                            //Update the insert offset.
+//                            insOffset = cc.selectionStart() - cc.block().position();
+//                        }
+//                        break;
+//                    }
+//                }
+//                //Insert the for each line.
+//                for(auto cc : ccs)
+//                {
+//                    QString patchedText = text;
+//                    int currentInsOffset = cc.positionInBlock();
+//                    if(cc.hasSelection())
+//                    {
+//                        currentInsOffset = cc.selectionStart() - cc.block().position();
+//                    }
+//                    //Check the row selection.
+//                    if(currentInsOffset < insOffset)
+//                    {
+//                        //Fill the space to the block
+//                        patchedText.prepend(QString(insOffset - currentInsOffset, ' '));
+//                    }
+//                    //Check the text cursor position.
+//                    cc.insertText(patchedText);
+//                }
+//                tc.setPosition(document()->findBlockByNumber(insBlock).position() +
+//                               insOffset + text.length());
+//                tc.endEditBlock();
+//                //Update the column position.
+//                m_columnOffset = tc.positionInBlock();
+//                //Update the extra selection.
+//                updateExtraSelections();
+//                event->accept();
+//                return;
+//            }
+//        }
         break;
     }
     }
     //Do original key press event.
     QPlainTextEdit::keyPressEvent(event);
-    //Check the copy validation.
-    if(m_columnBlockNumber != -1)
-    {
-        //Check whether the column mates the current offset.
-        emit copyAvailable(m_columnOffset != textCursor().positionInBlock());
-    }
+//    //Check the copy validation.
+//    if(m_columnBlockNumber != -1)
+//    {
+//        //Check whether the column mates the current offset.
+//        emit copyAvailable(m_columnOffset != textCursor().positionInBlock());
+//    }
 }
 
 void KNTextEditor::mousePressEvent(QMouseEvent *event)
@@ -704,20 +692,38 @@ void KNTextEditor::mousePressEvent(QMouseEvent *event)
     //Check the mouse event.
     if(event->button() == Qt::LeftButton)
     {
-        if(m_columnBlockNumber != -1)
-        {
-            //Clear the result.
-            clearColumnCursor();
-            //Update viewport.
-            viewport()->update();
-        }
+//        if(m_columnBlockNumber != -1)
+//        {
+//            //Clear the result.
+//            clearColumnCursor();
+//            //Update viewport.
+//            viewport()->update();
+//        }
     }
     //Do the original event.
     QPlainTextEdit::mousePressEvent(event);
 }
 
+static void fillBackground(QPainter *p, const QRectF &rect, QBrush brush, const QRectF &gradientRect = QRectF())
+{
+    p->save();
+    if (brush.style() >= Qt::LinearGradientPattern && brush.style() <= Qt::ConicalGradientPattern) {
+        if (!gradientRect.isNull()) {
+            QTransform m = QTransform::fromTranslate(gradientRect.left(), gradientRect.top());
+            m.scale(gradientRect.width(), gradientRect.height());
+            brush.setTransform(m);
+            const_cast<QGradient *>(brush.gradient())->setCoordinateMode(QGradient::LogicalMode);
+        }
+    } else {
+        p->setBrushOrigin(rect.topLeft());
+    }
+    p->fillRect(rect, brush);
+    p->restore();
+}
+
 void KNTextEditor::paintEvent(QPaintEvent *event)
 {
+    Q_ASSERT(qobject_cast<QPlainTextDocumentLayout*>(document()->documentLayout()));
     //Update the cursor position.
     QPainter painter(viewport());
     auto tc = textCursor();
@@ -731,16 +737,96 @@ void KNTextEditor::paintEvent(QPaintEvent *event)
         painter.fillRect(cursorLine.x(), cursorLine.y(), contentsRect().width(), height,
                          m_currentLine.format.background());
     }
-    painter.end();
-    //Do original paint event.
-    QPlainTextEdit::paintEvent(event);
-    //Start paint again.
-    painter.begin(viewport());
+
+    //Do original paint event. Most of the following code is copy from the
+    //original paintEvent for giant modification.
+    QPointF offset(contentOffset());
+    QRect er = event->rect();
+    QRect viewportRect = viewport()->rect();
+    QTextBlock block = firstVisibleBlock();
+    qreal maximumWidth = document()->documentLayout()->documentSize().width();
+    // Set a brush origin so that the WaveUnderline knows where the wave started
+    painter.setBrushOrigin(offset);
+    // keep right margin clean from full-width selection
+    int maxX = offset.x() + qMax((qreal)viewportRect.width(), maximumWidth)
+               - document()->documentMargin();
+    er.setRight(qMin(er.right(), maxX));
+    painter.setClipRect(er);
+    QAbstractTextDocumentLayout::PaintContext context = getPaintContext();
+    painter.setPen(context.palette.text().color());
+    while (block.isValid())
+    {
+        QRectF r = blockBoundingRect(block).translated(offset);
+        QTextLayout *layout = block.layout();
+        if (!block.isVisible())
+        {
+            offset.ry() += r.height();
+            block = block.next();
+            continue;
+        }
+        if (r.bottom() >= er.top() && r.top() <= er.bottom())
+        {
+            QTextBlockFormat blockFormat = block.blockFormat();
+            QBrush bg = blockFormat.background();
+            if (bg != Qt::NoBrush)
+            {
+                QRectF contentsRect = r;
+                contentsRect.setWidth(qMax(r.width(), maximumWidth));
+                fillBackground(&painter, contentsRect, bg);
+            }
+            QVector<QTextLayout::FormatRange> selections;
+            int blpos = block.position();
+            int bllen = block.length();
+            for (int i = 0; i < context.selections.size(); ++i)
+            {
+                const QAbstractTextDocumentLayout::Selection &range = context.selections.at(i);
+                const int selStart = range.cursor.selectionStart() - blpos;
+                const int selEnd = range.cursor.selectionEnd() - blpos;
+                if(selStart < bllen && selEnd > 0 && selEnd > selStart)
+                {
+                    QTextLayout::FormatRange o;
+                    o.start = selStart;
+                    o.length = selEnd - selStart;
+                    o.format = range.format;
+                    selections.append(o);
+                }
+                //Full width selection.
+                else if (!range.cursor.hasSelection() && range.format.hasProperty(QTextFormat::FullWidthSelection)
+                           && block.contains(range.cursor.position()))
+                {
+                    // for full width selections we don't require an actual selection, just
+                    // a position to specify the line. that's more convenience in usage.
+                    QTextLayout::FormatRange o;
+                    QTextLine l = layout->lineForTextPosition(range.cursor.position() - blpos);
+                    o.start = l.textStart();
+                    o.length = l.textLength();
+                    if (o.start + o.length == bllen - 1)
+                        ++o.length; // include newline
+                    o.format = range.format;
+                    selections.append(o);
+                }
+            }
+            //Draw the text using block layout.
+            layout->draw(&painter, offset, selections, er);
+        }
+        offset.ry() += r.height();
+        if (offset.y() > viewportRect.height())
+        {
+            break;
+        }
+        block = block.next();
+    }
+    if (backgroundVisible() && !block.isValid() && offset.y() <= er.bottom()
+        && (centerOnScroll() || verticalScrollBar()->maximum() == verticalScrollBar()->minimum())) {
+        painter.fillRect(QRect(QPoint((int)er.left(), (int)offset.y()), er.bottomRight()), palette().window());
+    }
+
+    //Draw the text cursor.
     int filter = (CursorDisplay | CursorVisible);
     if((m_editorOptions & filter) == filter)
     {
-        if(m_columnBlockNumber == -1)
-        {
+//        if(m_columnBlockNumber == -1)
+//        {
             //Draw the current text cursor.
             QRect cr = cursorRect();
             if(overwriteMode())
@@ -753,23 +839,23 @@ void KNTextEditor::paintEvent(QPaintEvent *event)
             }
             //Draw the cursor.
             painter.fillRect(cr, Qt::black);
-        }
-        else
-        {
-            //Draw the block content selection.
-            QTextCursor startCursor = textCursor();
-            auto startBlock = document()->findBlockByNumber(m_columnBlockNumber);
-            startCursor.setPosition(startBlock.position() + m_columnOffset);
-            //Get the rect positions.
-            QRect startRect = cursorRect(startCursor),
-                    endRect = cursorRect();
-            //Get the selection rect.
-            int top = qMin(startRect.top(), endRect.top()),
-                    bottom = qMax(startRect.bottom(), endRect.bottom());
-            //Draw the cursor.
-            painter.fillRect(QRect(endRect.x(), top, knUi->width(1), bottom - top),
-                             Qt::black);
-        }
+//        }
+//        else
+//        {
+//            //Draw the block content selection.
+//            QTextCursor startCursor = textCursor();
+//            auto startBlock = document()->findBlockByNumber(m_columnBlockNumber);
+//            startCursor.setPosition(startBlock.position() + m_columnOffset);
+//            //Get the rect positions.
+//            QRect startRect = cursorRect(startCursor),
+//                    endRect = cursorRect();
+//            //Get the selection rect.
+//            int top = qMin(startRect.top(), endRect.top()),
+//                    bottom = qMax(startRect.bottom(), endRect.bottom());
+//            //Draw the cursor.
+//            painter.fillRect(QRect(endRect.x(), top, knUi->width(1), bottom - top),
+//                             Qt::black);
+//        }
     }
 }
 
@@ -826,16 +912,16 @@ void KNTextEditor::onCursorPositionChanged()
     auto tc = textCursor();
     int posBegin=tc.blockNumber(), posEnd=tc.positionInBlock(),
             selLength = -1, selLines = -1;
-    if(m_columnBlockNumber == -1)
-    {
-        int selEnd = tc.selectionEnd(), selStart = tc.selectionStart();
-        tc.setPosition(selEnd);
-        int endRow = tc.blockNumber();
-        tc.setPosition(selStart);
-        int startRow = tc.blockNumber();
-        selLength = selEnd - selStart;
-        selLines = selLength == 0 ? 0 : (endRow - startRow + 1);
-    }
+//    if(m_columnBlockNumber == -1)
+//    {
+//        int selEnd = tc.selectionEnd(), selStart = tc.selectionStart();
+//        tc.setPosition(selEnd);
+//        int endRow = tc.blockNumber();
+//        tc.setPosition(selStart);
+//        int startRow = tc.blockNumber();
+//        selLength = selEnd - selStart;
+//        selLines = selLength == 0 ? 0 : (endRow - startRow + 1);
+//    }
     emit cursorPosUpdate(posBegin, posEnd, selLength, selLines);
 }
 
@@ -1118,30 +1204,30 @@ bool KNTextEditor::quickSearchBackward(const QTextCursor &cursor)
     return false;
 }
 
-QList<QTextCursor> KNTextEditor::columnCopy()
-{
-    //Extract the block information.
-    QString buffer;
-    auto ccs = columnSelectionText(buffer);
-    //Set the column text to clipboard.
-    knGlobal->copyText(buffer);
-    return ccs;
-}
+//QList<QTextCursor> KNTextEditor::columnCopy()
+//{
+//    //Extract the block information.
+//    QString buffer;
+//    auto ccs = columnSelectionText(buffer);
+//    //Set the column text to clipboard.
+//    knGlobal->copyText(buffer);
+//    return ccs;
+//}
 
-QList<QTextCursor> KNTextEditor::columnSelectionText(QString &selectionText) const
-{
-    auto ccs = columnCursors();
-    QStringList columnText;
-    columnText.reserve(ccs.size());
-    for(auto cc : ccs)
-    {
-        columnText.append(cc.selectedText());
-    }
-    //Set the selection text.
-    selectionText = columnText.join("\n");
-    //Set the column text to clipboard.
-    return ccs;
-}
+//QList<QTextCursor> KNTextEditor::columnSelectionText(QString &selectionText) const
+//{
+//    auto ccs = columnCursors();
+//    QStringList columnText;
+//    columnText.reserve(ccs.size());
+//    for(auto cc : ccs)
+//    {
+//        columnText.append(cc.selectedText());
+//    }
+//    //Set the selection text.
+//    selectionText = columnText.join("\n");
+//    //Set the column text to clipboard.
+//    return ccs;
+//}
 
 void KNTextEditor::updateExtraSelections()
 {
@@ -1159,27 +1245,27 @@ void KNTextEditor::updateExtraSelections()
     {
         //No need to maintain extra selection in this case.
         //Column selections.
-        if(m_columnBlockNumber != -1)
-        {
-            //Check whether we have to create the selections.
-            if(m_columnOffset != textCursor().positionInBlock())
-            {
-                //Construct the format.
-                QTextCharFormat format;
-                format.setBackground(palette().brush(QPalette::Highlight));
-                format.setForeground(palette().brush(QPalette::HighlightedText));
-                //Construct the block start.
-                auto ccs = columnCursors();
-                for(auto cc : ccs)
-                {
-                    //Construct the selection.
-                    QTextEdit::ExtraSelection selection;
-                    selection.cursor = cc;
-                    selection.format = format;
-                    selections.append(selection);
-                }
-            }
-        }
+//        if(m_columnBlockNumber != -1)
+//        {
+//            //Check whether we have to create the selections.
+//            if(m_columnOffset != textCursor().positionInBlock())
+//            {
+//                //Construct the format.
+//                QTextCharFormat format;
+//                format.setBackground(palette().brush(QPalette::Highlight));
+//                format.setForeground(palette().brush(QPalette::HighlightedText));
+//                //Construct the block start.
+//                auto ccs = columnCursors();
+//                for(auto cc : ccs)
+//                {
+//                    //Construct the selection.
+//                    QTextEdit::ExtraSelection selection;
+//                    selection.cursor = cc;
+//                    selection.format = format;
+//                    selections.append(selection);
+//                }
+//            }
+//        }
 
         // Quick search result.
         auto block = firstVisibleBlock();
@@ -1294,14 +1380,14 @@ QString KNTextEditor::codecName() const
 
 QString KNTextEditor::selectedText() const
 {
-    if(m_columnBlockNumber == -1)
-    {
-        return textCursor().selectedText();
-    }
-    //Or else we have to generate the column text.
-    QString buffer;
-    columnSelectionText(buffer);
-    return buffer;
+    return textCursor().selectedText();
+//    if(m_columnBlockNumber == -1)
+//    {
+//    }
+//    //Or else we have to generate the column text.
+//    QString buffer;
+//    columnSelectionText(buffer);
+//    return buffer;
 }
 
 void KNTextEditor::setCursorVisible(bool yes)
@@ -1339,10 +1425,118 @@ void KNTextEditor::setHighlightCursor(bool yes)
     updateExtraSelections();
 }
 
+void KNTextEditor::moveCurrentBlockUp()
+{
+    auto tc = textCursor();
+    //Ignore when there is only one line.
+    if(blockCount() == 1 || tc.blockNumber() == 0)
+    {
+        return;
+    }
+    tc.beginEditBlock();
+    auto doc = document();
+    //Change the selection of the line.
+    if(tc.hasSelection())
+    {
+        //Extract the text block
+        const QTextBlock &blockStart = doc->findBlock(tc.selectionStart()),
+                &blockEnd = doc->findBlock(tc.selectionEnd());
+        //Change the tc selection.
+        tc.setPosition(blockStart.position());
+        tc.setPosition(blockEnd.position() + blockEnd.length() - 1,
+                       QTextCursor::KeepAnchor);
+    }
+    else
+    {
+        const QTextBlock &block = tc.block();
+        //Select the current block.
+        tc.setPosition(block.position());
+        tc.setPosition(block.position() + block.length() - 1,
+                       QTextCursor::KeepAnchor);
+    }
+    //Move one block above.
+    QString selectedLines = tc.selectedText();
+    tc.removeSelectedText();
+    tc.movePosition(QTextCursor::PreviousBlock);
+    tc.movePosition(QTextCursor::EndOfBlock);
+    tc.deleteChar();
+    tc.movePosition(QTextCursor::StartOfBlock);
+    int currentPos = tc.position();
+    tc.insertText(selectedLines);
+    tc.insertText("\n");
+    tc.movePosition(QTextCursor::PreviousCharacter);
+    tc.setPosition(currentPos, QTextCursor::KeepAnchor);
+    tc.endEditBlock();
+    //Set the text cursor.
+    setTextCursor(tc);
+}
+
+void KNTextEditor::moveCurrentBlockDown()
+{
+    auto tc = textCursor();
+    //Ignore when there is only one line.
+    if(blockCount() == 1)
+    {
+        return;
+    }
+    auto doc = document();
+    //Change the selection of the line.
+    if(tc.hasSelection())
+    {
+        //Extract the text block
+        QTextBlock blockStart = doc->findBlock(tc.selectionStart()),
+                blockEnd = doc->findBlock(tc.selectionEnd());
+        //Check whether the block end already reaches the last line.
+        if(blockEnd.blockNumber() == doc->blockCount() - 1)
+        {
+            //Check whether the block end is at the beginning of the next
+            //block.
+            if(tc.selectionEnd() != blockEnd.position())
+            {
+                return;
+            }
+            //Treat the block end as its previous block.
+            blockEnd = blockEnd.previous();
+        }
+            tc.beginEditBlock();
+        //Change the tc selection.
+        tc.setPosition(blockStart.position());
+        tc.setPosition(blockEnd.position() + blockEnd.length() - 1,
+                       QTextCursor::KeepAnchor);
+    }
+    else
+    {
+        //Check if it is already the last line.
+        if(tc.blockNumber() == doc->blockCount() - 1)
+        {
+            return;
+        }
+        //Start move.
+        tc.beginEditBlock();
+        const QTextBlock &block = tc.block();
+        //Select the current block.
+        tc.setPosition(block.position());
+        tc.setPosition(block.position() + block.length() - 1,
+                       QTextCursor::KeepAnchor);
+    }
+    //Move one block above.
+    QString selectedLines = tc.selectedText();
+    tc.removeSelectedText();
+    tc.deleteChar();
+    tc.movePosition(QTextCursor::EndOfBlock);
+    tc.insertText("\n");
+    int currentPos = tc.position();
+    tc.insertText(selectedLines);
+    tc.setPosition(currentPos, QTextCursor::KeepAnchor);
+    tc.endEditBlock();
+    //Set the text cursor.
+    setTextCursor(tc);
+}
+
 void KNTextEditor::undo()
 {
     //Clear the column selection.
-    clearColumnCursor();
+//    clearColumnCursor();
     //Do undo.
     QPlainTextEdit::undo();
 }
@@ -1350,44 +1544,44 @@ void KNTextEditor::undo()
 void KNTextEditor::redo()
 {
     //Clear the column selection.
-    clearColumnCursor();
+//    clearColumnCursor();
     //Do redo.
     QPlainTextEdit::redo();
 }
 
 void KNTextEditor::cut()
 {
-    //Check column selection.
-    if(m_columnBlockNumber != -1)
-    {
-        //Do column copy.
-        auto ccs = columnCopy();
-        QTextCursor tc = textCursor();
-        tc.beginEditBlock();
-        //Remove all these column.
-        for(int i=ccs.size()-1; i>-1; --i)
-        {
-            //Remove the selection.
-            tc.setPosition(ccs.at(i).selectionStart());
-            tc.setPosition(ccs.at(i).selectionEnd(), QTextCursor::KeepAnchor);
-            tc.removeSelectedText();
-        }
-        tc.endEditBlock();
-        return;
-    }
+//    //Check column selection.
+//    if(m_columnBlockNumber != -1)
+//    {
+//        //Do column copy.
+//        auto ccs = columnCopy();
+//        QTextCursor tc = textCursor();
+//        tc.beginEditBlock();
+//        //Remove all these column.
+//        for(int i=ccs.size()-1; i>-1; --i)
+//        {
+//            //Remove the selection.
+//            tc.setPosition(ccs.at(i).selectionStart());
+//            tc.setPosition(ccs.at(i).selectionEnd(), QTextCursor::KeepAnchor);
+//            tc.removeSelectedText();
+//        }
+//        tc.endEditBlock();
+//        return;
+//    }
     //Do original cut.
     QPlainTextEdit::cut();
 }
 
 void KNTextEditor::copy()
 {
-    //Check column selection.
-    if(m_columnBlockNumber != -1)
-    {
-        //Do column copy.
-        columnCopy();
-        return;
-    }
+//    //Check column selection.
+//    if(m_columnBlockNumber != -1)
+//    {
+//        //Do column copy.
+//        columnCopy();
+//        return;
+//    }
     //Do original copy.
     QPlainTextEdit::copy();
 }
@@ -1504,66 +1698,26 @@ void KNTextEditor::updateViewportMargins()
     setViewportMargins(m_panel->width(), 0, 0, 0);
 }
 
-void KNTextEditor::setColumnCursor(const QTextCursor &cursor)
-{
-    //Append the cursor.
-    setColumnCursor(cursor.blockNumber(), cursor.positionInBlock());
-}
+//void KNTextEditor::setColumnCursor(const QTextCursor &cursor)
+//{
+//    //Append the cursor.
+//    setColumnCursor(cursor.blockNumber(), cursor.positionInBlock());
+//}
 
-void KNTextEditor::setColumnCursor(int blockNum, int offset)
-{
-    m_columnBlockNumber = blockNum;
-    m_columnOffset = offset;
-}
+//void KNTextEditor::setColumnCursor(int blockNum, int offset)
+//{
+//    m_columnBlockNumber = blockNum;
+//    m_columnOffset = offset;
+//}
 
-void KNTextEditor::clearColumnCursor()
-{
-    //Clear the cursor.
-    m_columnBlockNumber = -1;
-    m_columnOffset = -1;
-    //Clear the extra selection.
-    updateExtraSelections();
-}
-
-QList<QTextCursor> KNTextEditor::columnCursors() const
-{
-    //Create the cursor list.
-    QList<QTextCursor> cursors;
-    //Construct the block start.
-    QTextCursor tc = textCursor();
-    int blockStart = qMin(tc.blockNumber(), m_columnBlockNumber),
-            blockEnd = qMax(tc.blockNumber(), m_columnBlockNumber),
-            offsetStart = qMin(tc.positionInBlock(), m_columnOffset),
-            offsetEnd = qMax(tc.positionInBlock(), m_columnOffset);
-    for(int i=blockStart; i<=blockEnd; ++i)
-    {
-        //Extract the block.
-        auto block = document()->findBlockByNumber(i);
-        //Construct the block selection cursor.
-        QTextCursor sc = tc;
-        if(offsetStart < block.length())
-        {
-            sc.setPosition(block.position() + offsetStart);
-        }
-        else
-        {
-            sc.setPosition(block.position() + block.length() - 1);
-        }
-        if(offsetEnd < block.length())
-        {
-            sc.setPosition(block.position() + offsetEnd, QTextCursor::KeepAnchor);
-        }
-        else
-        {
-            sc.setPosition(block.position() + block.length() - 1,
-                           QTextCursor::KeepAnchor);
-        }
-        sc.setKeepPositionOnInsert(true);
-        //Construct the selection.
-        cursors.append(sc);
-    }
-    return cursors;
-}
+//void KNTextEditor::clearColumnCursor()
+//{
+//    //Clear the cursor.
+//    m_columnBlockNumber = -1;
+//    m_columnOffset = -1;
+//    //Clear the extra selection.
+//    updateExtraSelections();
+//}
 
 QString KNTextEditor::filePath() const
 {
@@ -1639,9 +1793,10 @@ KNTextBlockData *KNTextEditor::currentBlockData()
 
 bool KNTextEditor::canCopy() const
 {
-    return m_columnBlockNumber == -1 ?
-                textCursor().hasSelection() :
-                m_columnOffset != textCursor().positionInBlock();
+//    return m_columnBlockNumber == -1 ?
+//                textCursor().hasSelection() :
+//                m_columnOffset != textCursor().positionInBlock();
+    return textCursor().hasSelection();
 }
 
 void KNTextEditor::addLink(const QMetaObject::Connection &connection)
