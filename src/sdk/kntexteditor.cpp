@@ -194,6 +194,8 @@ KNTextEditor::KNTextEditor(const QString &titleName,
                            QWidget *parent, KNSyntaxHighlighter *highlighter,
                            bool linkWithGlobal) :
     QPlainTextEdit(parent),
+    m_verticalSpacePos(-1),
+    m_verticalSelect(false),
     m_quickSearchSense(Qt::CaseInsensitive),
     m_quickSearchCode(0),
     m_showResults(false),
@@ -531,7 +533,63 @@ void KNTextEditor::keyPressEvent(QKeyEvent *event)
         //Alt + Shift + Up / Down: Block select to up / down.
         if(event->modifiers() == (KNG::ALT | KNG::SHIFT))
         {
-            ;
+            //Check whether the text editor in vertical mode or not.
+            if(isVerticalEnabled())
+            {
+                //Based on the cursor position, insert the cursor to list.
+                ;
+            }
+            else
+            {
+                //Enter the extra cursor mode.
+                m_verticalSelect = true;
+                m_extraCursors.clear();
+                int tabSpacing = knGlobal->tabSpacing();
+                //Check whether the text cursor is already contains selection.
+                auto currentCursor = textCursor();
+                if(currentCursor.hasSelection())
+                {
+                    //Check whether the text cursor is at start or the end of the selection.
+                    bool atStart = currentCursor.position() == currentCursor.selectionStart();
+                    //Calculate the vertical start position.
+                    QTextCursor refCursor = textCursor();
+                    refCursor.setPosition(atStart ? currentCursor.selectionEnd() : currentCursor.selectionStart());
+                    m_verticalSpacePos = spacePosition(refCursor.block(), refCursor.positionInBlock(), tabSpacing);
+                    //Calculate the current end position.
+                    refCursor.setPosition(atStart ? currentCursor.selectionStart() : currentCursor.selectionEnd());
+                    int endSpacePos = spacePosition(refCursor.block(), refCursor.positionInBlock(), tabSpacing);
+                    auto doc = document();
+                    //Update all the block during the selection.
+                    refCursor.setPosition(currentCursor.selectionStart());
+                    int blockStart = refCursor.blockNumber();
+                    refCursor.setPosition(currentCursor.selectionEnd());
+                    int blockEnd = refCursor.blockNumber();
+                    for(int i = qMin(blockStart, blockEnd),
+                         iMax = qMax(blockStart, blockEnd); i <= iMax; ++i)
+                    {
+                        auto block = doc->findBlockByNumber(i);
+                        refCursor.setPosition(block.position() + textPosition(block, endSpacePos, tabSpacing));
+                        appendVerticalCursor(refCursor);
+                    }
+                }
+                else
+                {
+                    //Set the vertical space position.
+                    m_verticalSpacePos = spacePosition(
+                                textCursor().block(), textCursor().positionInBlock(),
+                                knGlobal->tabSpacing());
+                }
+                //Append the vertical text cursor.
+                appendVerticalCursor(textCursor());
+                //Move the cursor one row down or up.
+                event->setModifiers(Qt::NoModifier);
+                //Do the event.
+                QPlainTextEdit::keyPressEvent(event);
+                //Append the new text cursor.
+                appendVerticalCursor(textCursor());
+                event->accept();
+                return;
+            }
         }
 //        //If alt modifiters is applied, enter vertical mode.
 //        if(event->modifiers() & KNG::ALT)
@@ -567,7 +625,7 @@ void KNTextEditor::keyPressEvent(QKeyEvent *event)
     /*
      * Key maps:
      * Alt + Left / Right           : Not defined.
-     * Shift + Left / Right         : Select.
+     * Shift + Left / Right         : Select. (Default)
      * Ctrl + Left / Right         x: Word left / right move (Default)
      * Ctrl + Alt + Left / Right    : Not defined.
      * Ctrl + Shift + Left / Right x: Select to left / right word. (Default)
@@ -825,10 +883,14 @@ void KNTextEditor::paintEvent(QPaintEvent *event)
     int filter = (CursorDisplay | CursorVisible);
     if((m_editorOptions & filter) == filter)
     {
-//        if(m_columnBlockNumber == -1)
-//        {
+        //Draw the extra cursors.
+        QVector<QTextCursor> cursors;
+        cursors.append(textCursor());
+        const QVector<QTextCursor> &renderList = isExtraCursorEnabled() ? m_extraCursors : cursors;
+        for(int i=0; i<renderList.size(); ++i)
+        {
             //Draw the current text cursor.
-            QRect cr = cursorRect();
+            QRect cr = cursorRect(renderList.at(i));
             if(overwriteMode())
             {
                 cr = QRect(cr.x(), cr.bottom() - 1, cr.width(), knUi->height(1));
@@ -839,11 +901,9 @@ void KNTextEditor::paintEvent(QPaintEvent *event)
             }
             //Draw the cursor.
             painter.fillRect(cr, Qt::black);
-//        }
-//        else
+        }
+//        if(isExtraCursorEnabled())
 //        {
-//            //Draw the block content selection.
-//            QTextCursor startCursor = textCursor();
 //            auto startBlock = document()->findBlockByNumber(m_columnBlockNumber);
 //            startCursor.setPosition(startBlock.position() + m_columnOffset);
 //            //Get the rect positions.
@@ -855,6 +915,9 @@ void KNTextEditor::paintEvent(QPaintEvent *event)
 //            //Draw the cursor.
 //            painter.fillRect(QRect(endRect.x(), top, knUi->width(1), bottom - top),
 //                             Qt::black);
+//        }
+//        else
+//        {
 //        }
     }
 }
@@ -1245,27 +1308,22 @@ void KNTextEditor::updateExtraSelections()
     {
         //No need to maintain extra selection in this case.
         //Column selections.
-//        if(m_columnBlockNumber != -1)
-//        {
-//            //Check whether we have to create the selections.
-//            if(m_columnOffset != textCursor().positionInBlock())
-//            {
-//                //Construct the format.
-//                QTextCharFormat format;
-//                format.setBackground(palette().brush(QPalette::Highlight));
-//                format.setForeground(palette().brush(QPalette::HighlightedText));
-//                //Construct the block start.
-//                auto ccs = columnCursors();
-//                for(auto cc : ccs)
-//                {
-//                    //Construct the selection.
-//                    QTextEdit::ExtraSelection selection;
-//                    selection.cursor = cc;
-//                    selection.format = format;
-//                    selections.append(selection);
-//                }
-//            }
-//        }
+        if(isExtraCursorEnabled())
+        {
+            //Construct the format.
+            QTextCharFormat format;
+            format.setBackground(palette().brush(QPalette::Highlight));
+            format.setForeground(palette().brush(QPalette::HighlightedText));
+            //Construct the block start.
+            for(auto cc : m_extraCursors)
+            {
+                //Construct the selection.
+                QTextEdit::ExtraSelection selection;
+                selection.cursor = cc;
+                selection.format = format;
+                selections.append(selection);
+            }
+        }
 
         // Quick search result.
         auto block = firstVisibleBlock();
@@ -1328,13 +1386,13 @@ void KNTextEditor::updateHighlighter(KNSyntaxHighlighter *highlighter)
     m_highlighter->rehighlight();
 }
 
-int KNTextEditor::tabSpacePosition(const QTextBlock &block, int pos,
-                                   int tabSpacing)
+int KNTextEditor::spacePosition(const QTextBlock &block, int textPos,
+                                int tabSpacing)
 {
     //Based on the position and the characters, calculate the current characters.
     int column = 0;
     QString &&blockText = block.text();
-    for (int i=0; i<pos; ++i)
+    for (int i=0; i<textPos; ++i)
     {
         //Check whether the iteration is \t.
         if(blockText.at(i) == '\t')
@@ -1349,7 +1407,26 @@ int KNTextEditor::tabSpacePosition(const QTextBlock &block, int pos,
     return column;
 }
 
-QString KNTextEditor::levelLevelString(int spaceLevel, int tabSpacing)
+int KNTextEditor::textPosition(const QTextBlock &block, int spacePos,
+                               int tabSpacing)
+{
+    //Loop and reduce the space pos, until it down to 0, then that is the space
+    //pos.
+    QString &&blockText = block.text();
+    for (int i=0; i<blockText.size(); ++i)
+    {
+        int charWidth = blockText.at(i) == '\t' ? tabSpacing : 1;
+        spacePos -= charWidth;
+        if(spacePos <= 0)
+        {
+            return i + 1;
+        }
+    }
+    //Or else, it should be the end of the string.
+    return blockText.size();
+}
+
+QString KNTextEditor::textLevelString(int spaceLevel, int tabSpacing)
 {
     if(knGlobal->replaceTab())
     {
@@ -1698,6 +1775,41 @@ void KNTextEditor::updateViewportMargins()
     setViewportMargins(m_panel->width(), 0, 0, 0);
 }
 
+bool KNTextEditor::isExtraCursorEnabled()
+{
+    return !m_extraCursors.isEmpty();
+}
+
+bool KNTextEditor::isVerticalEnabled()
+{
+    return m_verticalSelect && isExtraCursorEnabled();
+}
+
+void KNTextEditor::appendVerticalCursor(QTextCursor cursor)
+{
+    //Search the cursor in the list.
+    int cursorBlock = cursor.blockNumber();
+    for(auto tc : m_extraCursors)
+    {
+        if(tc.blockNumber() == cursorBlock)
+        {
+            return;
+        }
+    }
+    //Extract the block data.
+    const QTextBlock &block = cursor.block();
+    auto data = blockData(block);
+    data->verticalTextPos =
+            textPosition(block, m_verticalSpacePos, knGlobal->tabSpacing());
+    //Select from the vertical text pos to the current position.
+    int endPosition = cursor.position();
+    qDebug()<<endPosition<<block.position()+data->verticalTextPos<<data->verticalTextPos;
+    cursor.setPosition(block.position() + data->verticalTextPos);
+    cursor.setPosition(endPosition, QTextCursor::KeepAnchor);
+    //Append the cursor.
+    m_extraCursors.append(cursor);
+}
+
 //void KNTextEditor::setColumnCursor(const QTextCursor &cursor)
 //{
 //    //Append the cursor.
@@ -1905,13 +2017,13 @@ void KNTextEditor::indentCursor()
                 auto b = document()->findBlockByNumber(i);
                 //Calculate the space pos.
                 int textStart = firstNonSpacePos(b),
-                    spaceLevel = tabSpacePosition(b, textStart, tabSpacing);
+                    spaceLevel = spacePosition(b, textStart, tabSpacing);
                 //Insert the level text.
                 tc.setPosition(b.position());
                 tc.setPosition(b.position() + textStart,
                                QTextCursor::KeepAnchor);
                 tc.removeSelectedText();
-                tc.insertText(levelLevelString(spaceLevel + tabSpacing,
+                tc.insertText(textLevelString(spaceLevel + tabSpacing,
                                                tabSpacing));
             }
             tc.endEditBlock();
@@ -1936,7 +2048,7 @@ void KNTextEditor::indentCursor()
     if(knGlobal->replaceTab())
     {
         //Calculate and insert spacing.
-        int tabPos = tabSpacePosition(currentBlock, tc.positionInBlock(),
+        int tabPos = spacePosition(currentBlock, tc.positionInBlock(),
                                       tabSpacing);
         //Check whether the tab position is a tab stop.
         if(tabPos % tabSpacing)
@@ -1983,7 +2095,7 @@ void KNTextEditor::unindentCursor()
                 auto b = document()->findBlockByNumber(i);
                 //Calculate the space pos.
                 int textStart = firstNonSpacePos(b),
-                    spaceLevel = tabSpacePosition(b, textStart, tabSpacing) -
+                    spaceLevel = spacePosition(b, textStart, tabSpacing) -
                         tabSpacing;
                 if(spaceLevel < 0)
                 {
@@ -1994,7 +2106,7 @@ void KNTextEditor::unindentCursor()
                 tc.setPosition(b.position() + textStart,
                                       QTextCursor::KeepAnchor);
                 tc.removeSelectedText();
-                tc.insertText(levelLevelString(spaceLevel, tabSpacing));
+                tc.insertText(textLevelString(spaceLevel, tabSpacing));
             }
         }
         tc.endEditBlock();
@@ -2006,7 +2118,7 @@ void KNTextEditor::unindentCursor()
     int textStart = firstNonSpacePos(currentBlock);
     if(tc.positionInBlock() <= textStart)
     {
-        int spaceLevel = tabSpacePosition(currentBlock, textStart, tabSpacing);
+        int spaceLevel = spacePosition(currentBlock, textStart, tabSpacing);
         //Reduce one spaceing level.
         spaceLevel -= tabSpacing;
         if(spaceLevel < 0)
@@ -2020,7 +2132,7 @@ void KNTextEditor::unindentCursor()
         tc.setPosition(currentBlock.position() + textStart,
                         QTextCursor::KeepAnchor);
         tc.removeSelectedText();
-        tc.insertText(levelLevelString(spaceLevel, tabSpacing));
+        tc.insertText(textLevelString(spaceLevel, tabSpacing));
         tc.endEditBlock();
     }
 }

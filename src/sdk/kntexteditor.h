@@ -463,9 +463,11 @@ private:
     void quickSearchUi(const QTextBlock &block);
     void quickSearchCheck(const QTextBlock &block);
     void updateHighlighter(KNSyntaxHighlighter *highlighter = nullptr);
-    QString levelLevelString(int spaceLevel, int tabSpacing);
-    static int tabSpacePosition(const QTextBlock &block, int pos,
-                                int tabSpacing);
+    QString textLevelString(int spaceLevel, int tabSpacing);
+    static int spacePosition(const QTextBlock &block, int textPos,
+                             int tabSpacing);
+    static int textPosition(const QTextBlock &block, int spacePos,
+                            int tabSpacing);
     void setFilePath(const QString &filePath);
     void updateViewportMargins();
 //    QList<QTextCursor> columnCopy();
@@ -473,6 +475,12 @@ private:
 //    void setColumnCursor(const QTextCursor &cursor);
 //    void setColumnCursor(int blockNum, int offset);
 //    void clearColumnCursor();
+    bool isExtraCursorEnabled();
+    bool isVerticalEnabled();
+    void appendVerticalCursor(QTextCursor cursor);
+    QVector<QTextCursor> m_extraCursors;
+    int m_verticalSpacePos;
+    bool m_verticalSelect;
 
     QScopedPointer<KNTextSearcher> m_quickSearchPrev, m_quickSearchNext;
     QFuture<void> m_futurePrev, m_futureNext;

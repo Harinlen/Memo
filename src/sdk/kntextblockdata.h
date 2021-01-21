@@ -52,6 +52,8 @@ public:
     int level = 0;
     int levelMargin = 0;
     bool isFold = false;
+    //Vertical cursor caches.
+    int verticalTextPos = 0;
 
     void lockQuickSearch() { lock.lock(); }
     void unlockQuickSearch() { lock.unlock(); }
