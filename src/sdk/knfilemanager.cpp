@@ -22,6 +22,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QMimeData>
 
 #include "kntabbar.h"
 #include "knmainwindow.h"
@@ -58,6 +59,7 @@ KNFileManager::KNFileManager(QWidget *parent) : QWidget(parent),
     m_newCounter(0)
 {
     //Set properties.
+    setAcceptDrops(true);
     setContentsMargins(0, 0, 0, 0);
     //Construct the layout.
     QBoxLayout *mainLayout=new QBoxLayout(QBoxLayout::TopToBottom, this);
@@ -478,6 +480,41 @@ void KNFileManager::showEvent(QShowEvent *event)
     }
     //Show the file manager.
     QWidget::showEvent(event);
+}
+
+void KNFileManager::dragEnterEvent(QDragEnterEvent *event)
+{
+    auto data = event->mimeData();
+    if(data->hasUrls())
+    {
+        //We have to check whether those urls are local files.
+        for(auto url : data->urls())
+        {
+            if(url.isLocalFile())
+            {
+                event->acceptProposedAction();
+                return;
+            }
+        }
+    }
+}
+
+void KNFileManager::dropEvent(QDropEvent *event)
+{
+    //Load the file from the drop event.
+    auto urls = event->mimeData()->urls();
+    QStringList paths;
+    paths.reserve(urls.size());
+    for(auto url : urls)
+    {
+        //Check whether the url is local file.
+        if(url.isLocalFile())
+        {
+            paths.append(url.toLocalFile());
+        }
+    }
+    //Open the file paths.
+    openFiles(paths);
 }
 
 void KNFileManager::retranslate()

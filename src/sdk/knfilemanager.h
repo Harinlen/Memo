@@ -206,7 +206,17 @@ public slots:
     void showCodecDialog();
 
 protected:
+    /*!
+     * \brief Reimplemented from QWidget::showEvent().
+     */
     void showEvent(QShowEvent *event) override;
+
+    /*!
+     * \brief Reimplemented from QWidget::dragEnterEvent().
+     */
+    void dragEnterEvent(QDragEnterEvent *event) override;
+
+    void dropEvent(QDropEvent *event) override;
 
 private slots:
     void retranslate();

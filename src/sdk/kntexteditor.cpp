@@ -215,6 +215,7 @@ KNTextEditor::KNTextEditor(const QString &titleName,
     m_editorOptions(HighlightCursor | CursorDisplay | LineNumberDisplay)
 {
     //Set properties.
+    setAcceptDrops(false);
     setFrameStyle(QFrame::NoFrame);
     setCursorWidth(0);
     //Configure the extra selections.
