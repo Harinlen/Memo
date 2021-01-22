@@ -284,6 +284,11 @@ public slots:
     void copy();
 
     /*!
+     * \brief Reimplemented from QPlainTextEdit::paste().
+     */
+    void paste();
+
+    /*!
      * \brief Open the file using a different codec.
      * \param codecName The name of the codec.
      */
@@ -460,6 +465,7 @@ private:
         LineNumberDisplay  = 1 << 2,
         HighlightCursor    = 1 << 3,
     };
+    void insertTabAt(QTextCursor &tc, int tabSpacing);
     void quickSearchUi(const QTextBlock &block);
     void quickSearchCheck(const QTextBlock &block);
     void updateHighlighter(KNSyntaxHighlighter *highlighter = nullptr);
@@ -470,16 +476,15 @@ private:
                             int tabSpacing);
     void setFilePath(const QString &filePath);
     void updateViewportMargins();
-//    QList<QTextCursor> columnCopy();
-//    QList<QTextCursor> columnSelectionText(QString &selectionText) const;
-//    void setColumnCursor(const QTextCursor &cursor);
-//    void setColumnCursor(int blockNum, int offset);
-//    void clearColumnCursor();
-    bool isExtraCursorEnabled();
-    bool isVerticalEnabled();
+    void extraCursorCopy();
+    QString extraCursorText() const;
+    void clearExtraCursor();
+    void enterVerticalMode();
+    bool isExtraCursorEnabled() const;
+    bool isVerticalEnabled() const;
     void appendVerticalCursor(QTextCursor cursor);
     QVector<QTextCursor> m_extraCursors;
-    int m_verticalSpacePos;
+    int m_vStartSpacePos, m_vEndSpacePos;
     bool m_verticalSelect;
 
     QScopedPointer<KNTextSearcher> m_quickSearchPrev, m_quickSearchNext;
