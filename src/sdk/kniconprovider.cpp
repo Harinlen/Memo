@@ -19,10 +19,12 @@ KNIconProvider::KNIconProvider() :
 {
 }
 
+#if QT_VERSION_MAJOR > 5
 QIcon KNIconProvider::icon(QAbstractFileIconProvider::IconType type) const
 {
     return type == File ? m_fileIcon : m_folderIcon;
 }
+#endif
 
 QIcon KNIconProvider::icon(const QFileInfo &info) const
 {

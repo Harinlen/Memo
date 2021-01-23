@@ -229,7 +229,17 @@ void KNFindEngine::start()
             itemResult.posStart = posDetect.positionInBlock();
             QString slice = tc.block().text();
             slice = slice.left(itemResult.posStart + 50);
-            slice = slice.right(100);
+            int expectEnd = qMin(itemResult.posStart + itemResult.length, slice.length()),
+                    expectStart = itemResult.posStart;
+            if(slice.length() > 100)
+            {
+                int offset = slice.length() - 100;
+                expectStart -= offset;
+                expectEnd -= offset;
+                slice = slice.right(100);
+            }
+            itemResult.sliceStart = expectStart;
+            itemResult.sliceEnd = expectEnd;
             itemResult.slice = slice;
             fileResult.items.append(itemResult);
             //Check quit request.

@@ -25,9 +25,9 @@ KNToolHash::KNToolHash(int hashLength, HashFunc hashFunc,
                        KNFileManager *fileManager, QWidget *parent) :
     QMenu(parent),
     m_hashFunc(hashFunc),
-    m_inputHash(new KNToolHashInput(hashFunc, parent)),
-    m_fileHash(new KNToolHashFile(hashLength, hashFunc, parent)),
     m_fileManager(fileManager),
+    m_inputHash(new KNToolHashInput(hashFunc, m_fileManager)),
+    m_fileHash(new KNToolHashFile(hashLength, hashFunc, m_fileManager)),
     m_generate(new QAction(this)),
     m_generateFromFiles(new QAction(this)),
     m_generateFromSelection(new QAction(this))

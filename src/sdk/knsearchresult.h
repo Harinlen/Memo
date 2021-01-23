@@ -29,6 +29,7 @@ public:
     struct ItemResult
     {
         QString slice;
+        int sliceStart, sliceEnd;
         int row;
         int posStart;
         int length;

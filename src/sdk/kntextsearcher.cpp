@@ -58,14 +58,12 @@ void KNTextSearcher::searchBlock(
 
 
 void KNTextSearcher::search(QTextBlock block, const QString &keywords,
-                            int lineCount, bool untilEnd, bool forward,
-                            const unsigned long long int &searchCode,
-                            Qt::CaseSensitivity cs)
+                            SearchOption option)
 {
     const int len = keywords.length();
     //Loop and check every thing.
-    for(; block.isValid() && (untilEnd || lineCount >= -1);
-        block = forward ? block.next() : block.previous())
+    for(; block.isValid() && (option.untilEnd || option.lineCount >= -1);
+        block = option.forward ? block.next() : block.previous())
     {
         //Check the quit status.
         m_lock.lock();
@@ -77,14 +75,14 @@ void KNTextSearcher::search(QTextBlock block, const QString &keywords,
         }
         m_lock.unlock();
         //Update the line count.
-        lineCount -= untilEnd ? 0 : block.lineCount();
+        option.lineCount -= option.untilEnd ? 0 : block.lineCount();
         KNTextBlockData *data = static_cast<KNTextBlockData *>(block.userData());
         if(Q_UNLIKELY(data == nullptr))
         {
             continue;
         }
         //Does search for the string.
-        searchBlock(block.text(), keywords, data, searchCode, cs, len);
+        searchBlock(block.text(), keywords, data, option.searchCode, option.cs, len);
     }
 }
 

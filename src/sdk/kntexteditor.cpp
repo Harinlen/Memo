@@ -21,8 +21,6 @@
 #include <QScrollBar>
 #include <QTextStream>
 #include <QFileInfo>
-#include <QStringDecoder>
-#include <QStringEncoder>
 #include <QFontDatabase>
 #include <QFile>
 #include <QFileInfo>
@@ -312,11 +310,6 @@ void KNTextEditor::paintSidebar(QPainter *painter, int lineNumWidth,
                       QColor(240, 240, 240));
     //Draw the content.
     bool drawLineNum = (m_editorOptions & LineNumberDisplay);
-    KNTextBlockData *prevData = nullptr;
-    if(block.previous().isValid())
-    {
-        prevData = blockData(block.previous());
-    }
     while(block.isValid() && area.y() < height())
     {
         //Fetch the block area.
@@ -1132,8 +1125,7 @@ void KNTextEditor::quickSearchUi(const QTextBlock &block)
     QScopedPointer<KNTextSearcher> searcher;
     searcher.reset(new KNTextSearcher);
     searcher->search(block, m_quickSearchKeyword,
-                     height()/fontMetrics().lineSpacing()+2,
-                     false, true, m_quickSearchCode, m_quickSearchSense);
+                     KNTextSearcher::SearchOption(height()/fontMetrics().lineSpacing()+2, false, true, m_quickSearchCode, m_quickSearchSense));
     //Update the selection.
     updateExtraSelections();
 }
@@ -1219,14 +1211,25 @@ void KNTextEditor::quickSearch(const QString &keywords, Qt::CaseSensitivity cs,
         m_quickSearchNext.reset(new KNTextSearcher);
         m_quickSearchPrev.reset(new KNTextSearcher);
         //Start searching.
+#if QT_VERSION_MAJOR > 5
         m_futureNext = QtConcurrent::run(
                     &KNTextSearcher::search, m_quickSearchNext.data(),
-                    firstVisibleBlock(), m_quickSearchKeyword, -1, true, true,
-                    m_quickSearchCode, m_quickSearchSense);
+                    firstVisibleBlock(), m_quickSearchKeyword,
+                    KNTextSearcher::SearchOption(-1, true, true, m_quickSearchCode, m_quickSearchSense));
         m_futurePrev = QtConcurrent::run(
                     &KNTextSearcher::search, m_quickSearchPrev.data(),
-                    firstVisibleBlock(), m_quickSearchKeyword, -1, true, false,
-                    m_quickSearchCode, m_quickSearchSense);
+                    firstVisibleBlock(), m_quickSearchKeyword,
+                    KNTextSearcher::SearchOption(-1, true, false, m_quickSearchCode, m_quickSearchSense));
+#else
+        m_futureNext = QtConcurrent::run(
+                    m_quickSearchNext.data(), &KNTextSearcher::search,
+                    firstVisibleBlock(), m_quickSearchKeyword,
+                    KNTextSearcher::SearchOption(-1, true, true, m_quickSearchCode, m_quickSearchSense));
+        m_futurePrev = QtConcurrent::run(
+                    m_quickSearchPrev.data(), &KNTextSearcher::search,
+                    firstVisibleBlock(), m_quickSearchKeyword,
+                    KNTextSearcher::SearchOption(-1, true, false, m_quickSearchCode, m_quickSearchSense));
+#endif
         //Move to next.
         quickSearchNext(position);
     }
@@ -1917,6 +1920,10 @@ QString KNTextEditor::extraCursorText() const
 
 void KNTextEditor::clearExtraCursor()
 {
+    if(!isExtraCursorEnabled())
+    {
+        return;
+    }
     //Reset the vertical selection mode.
     m_verticalSelect = false;
     //Update the current cursor position.
@@ -2092,8 +2099,8 @@ KNTextBlockData *KNTextEditor::currentBlockData()
 bool KNTextEditor::canCopy() const
 {
     return isExtraCursorEnabled() ?
-                textCursor().hasSelection() :
-                true;
+                true :
+                textCursor().hasSelection();
 }
 
 void KNTextEditor::addLink(const QMetaObject::Connection &connection)

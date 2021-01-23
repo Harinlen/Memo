@@ -15,6 +15,7 @@
 #include "knuimanager.h"
 #include "knsearchresulteditor.h"
 #include "knfilemanager.h"
+#include "knglobal.h"
 
 #include "knsearchresult.h"
 
@@ -36,35 +37,39 @@ KNSearchResult::KNSearchResult(QWidget *parent) :
 
 void KNSearchResult::addResult(const SearchResult &result)
 {
-    //Construct the search result.
-    QStringList resultBuffer;
-    resultBuffer.append(result.keyword);
+    //Check the cursor.
+    QTextCursor tc = m_editor->textCursor(), hc = m_editor->textCursor();
+    tc.movePosition(QTextCursor::Start);
+    m_editor->setTextCursor(tc);
+    tc.insertText(result.keyword);
+    tc.insertBlock();
+    auto searchFormat = knGlobal->quickSearchFormat();
+    QVector<int> startPos, endPos;
     for(int i=0; i<result.results.size(); ++i)
     {
         QStringList fileBuffer;
         auto fileItems = result.results.at(i).items;
         fileBuffer.reserve(fileItems.size() + 1);
         //Append the title.
-        fileBuffer.append(QString("  %1 (%2)").arg(
+        tc.insertText(QString("  %1 (%2)").arg(
                               result.results.at(i).path,
                               QString::number(fileItems.size())));
+        tc.insertBlock();
         //Construct the file result.
         for(int j=0; j<fileItems.size(); ++j)
         {
             auto item = fileItems.at(j);
             //Insert to file buffer.
-            fileBuffer.append(QString("    %1: %2").arg(
-                                  QString::number(item.row + 1),
-                                  item.slice));
+            QString header = QString("    %1: ").arg(QString::number(item.row + 1));
+            tc.insertText(header);
+            tc.insertText(item.slice);
+            int startPos = tc.block().position() + header.size();
+            hc.setPosition(startPos + item.sliceStart);
+            hc.setPosition(startPos + item.sliceEnd, QTextCursor::KeepAnchor);
+            hc.setCharFormat(searchFormat);
+            tc.insertBlock();
         }
-        resultBuffer.append(fileBuffer.join("\n"));
     }
-    //Check the cursor.
-    QTextCursor tc = m_editor->textCursor();
-    tc.movePosition(QTextCursor::Start);
-    m_editor->setTextCursor(tc);
-    //Now insert the editor.
-    m_editor->insertPlainText(resultBuffer.join("\n") + "\n");
     //Move to the result.
     tc.movePosition(QTextCursor::Start);
     m_editor->setTextCursor(tc);

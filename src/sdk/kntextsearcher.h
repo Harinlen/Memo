@@ -26,6 +26,38 @@ class KNTextSearcher : public QObject
 {
     Q_OBJECT
 public:
+    /*!
+     * \brief The SearchOption struct provides the search options to perform the
+     * search.
+     * \param lineCount lineCount The line count for search.
+     * \param untilEnd Whether the search should be checked to the end.
+     * \param forward Whether the searcher is search in backward direction.
+     * \param searchCode The search code mark.
+     * \param cs The search flag for case sensitive.
+     */
+    struct SearchOption
+    {
+        int lineCount;
+        const bool untilEnd;
+        const bool forward;
+        const unsigned long long int searchCode;
+        const Qt::CaseSensitivity cs;
+
+        SearchOption(int lc, bool toEnd, bool goForward,
+                     const unsigned long long int &code,
+                     Qt::CaseSensitivity sense) :
+            lineCount(lc),
+            untilEnd(toEnd),
+            forward(goForward),
+            searchCode(code),
+            cs(sense)
+        {}
+    };
+
+    /*!
+     * \brief Construct a KNTextSearcher object.
+     * \param parent The parent object.
+     */
     explicit KNTextSearcher(QObject *parent = nullptr);
 
     /*!
@@ -58,16 +90,10 @@ public slots:
      * \brief Search the entire document for the text.
      * \param block The text start block.
      * \param keywords The keywords to search.
-     * \param lineCount The line count for search.
-     * \param untilEnd Whether the search should be checked to the end.
-     * \param forward Whether the searcher is search in backward direction.
-     * \param searchCode The search code mark.
-     * \param cs The search flag for case sensitive.
+     * \param option The search options.
      */
     void search(QTextBlock block, const QString &keywords,
-                int lineCount, bool untilEnd, bool forward,
-                const unsigned long long int &searchCode,
-                Qt::CaseSensitivity cs);
+                SearchOption option);
 
     /*!
      * \brief Quit the search progress.

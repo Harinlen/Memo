@@ -43,9 +43,9 @@ private slots:
 
 private:
     HashFunc m_hashFunc;
+    KNFileManager *m_fileManager;
     KNToolHashInput *m_inputHash;
     KNToolHashFile *m_fileHash;
-    KNFileManager *m_fileManager;
     QAction *m_generate, *m_generateFromFiles, *m_generateFromSelection;
 };
 

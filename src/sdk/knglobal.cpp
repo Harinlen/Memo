@@ -378,7 +378,7 @@ void KNGlobal::retranslate()
     m_suffixNames[ExtXml]=tr("eXtensible Markup Language file");
     m_suffixNames[ExtYaml]=tr("YAML Ain't Markup Language file");
     //Construct the file suffixes.
-    QVector<QString> results;
+    QStringList results;
     for(int i=0; i<FileSuffixCount; ++i)
     {
         results.append(QString("%1 (%2)").arg(m_suffixNames[i], m_suffixLists[i].join(' ')));
@@ -431,8 +431,8 @@ QPixmap KNGlobal::bookmark() const
 void KNGlobal::searchOnline(const QString &keywords)
 {
     //Generate the url.
-    KNUtil::openLocalFile(m_searchUrl[m_searchUrlIndex].arg(
-                              QUrl::toPercentEncoding(keywords)));
+    KNUtil::openLocalFile(m_searchUrl[m_searchUrlIndex].arg
+                          (QString(QUrl::toPercentEncoding(keywords))));
 }
 
 KNMainWindow *KNGlobal::mainWindow()

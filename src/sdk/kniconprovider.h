@@ -15,13 +15,24 @@
 
 #include <QFileIconProvider>
 
+/*!
+ * \brief The KNIconProvider class provides the icon for the file project panel.
+ */
 class KNIconProvider : public QFileIconProvider
 {
 public:
+    /*!
+     * \brief Construct a KNIconProvider object.
+     */
     explicit KNIconProvider();
 
+#if QT_VERSION_MAJOR > 5
     QIcon icon(QFileIconProvider::IconType type) const override;
+#endif
 
+    /*!
+     * \brief Reimplemented from QFileIconProvider::icon().
+     */
     QIcon icon(const QFileInfo &info) const override;
 
 private:

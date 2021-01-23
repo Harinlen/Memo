@@ -49,7 +49,11 @@ KNLocalPeer::KNLocalPeer(QObject *parent, const QString &appId) :
     prefix.truncate(6);
     //Get the socket name.
     QByteArray idc = m_id.toUtf8();
+#if QT_VERSION_MAJOR > 5
     quint16 idNum = qChecksum(idc);
+#else
+    quint16 idNum = qChecksum(idc, idc.size());
+#endif
     m_socketName = QLatin1String("knsingleapp-") + prefix + QLatin1Char('-') +
             QString::number(idNum, 16);
 #if defined(Q_OS_WIN)

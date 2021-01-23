@@ -8,11 +8,16 @@ Memo is a Notepad++ replacement developed using Qt framework only. It is aiming 
 
 Tested platform:
 
-- Windows 10 20H1 (64-bit)
+- Windows 10 64-bit (20H1, 20H2)
+
+Tested compilers:
+
+- MSVC 2019
+- MinGW 8.1.0
 
 ## Dependencies
 
-- Qt 6 (>= 6.0.0)
+- Qt 6 (>= 6.0.0) or Qt 5 (>= 5.15.0)
 
 ## TODO List
 
@@ -28,6 +33,8 @@ Tested platform:
 - [x] Session support
 - [x] Folder Panel support
 - [x] Codec dialog
+- [x] Qt 5 (5.15) compatible support
+- [ ] Previous Qt 5 LTS compatible support
 
 ## License
 

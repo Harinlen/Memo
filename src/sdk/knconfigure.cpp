@@ -201,7 +201,11 @@ void KNConfigure::setData(const QString &key, const QVariant &value)
     //function of QJsonValue only have the following types:
     //   bool, QString, array, double, object.
     //So we have to translate some complex type variant to object.
+#if QT_VERSION_MAJOR > 5
     switch(value.metaType().id())
+#else
+    switch(static_cast<QMetaType::Type>(value.type()))
+#endif
     {
     //For the basic types(double, float, int, bool, QString), we will save them
     //directly.

@@ -356,7 +356,7 @@ private:
     };
 
     QString m_suffixNames[FileSuffixCount];
-    QVector<QString> m_suffixLists[FileSuffixCount];
+    QStringList m_suffixLists[FileSuffixCount];
     QString m_dirPath[DirCount], m_fileDialogSuffix;
     QString m_searchUrl[5];
     QPixmap m_bookmark;
