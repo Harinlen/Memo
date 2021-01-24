@@ -511,6 +511,11 @@ void KNGlobal::copyText(const QString &content)
     clipboard->setText(content);
 }
 
+QString KNGlobal::clipboardText() const
+{
+    return QApplication::clipboard()->text();
+}
+
 QFont KNGlobal::editorDefaultFont() const
 {
     //Add font to the editor.

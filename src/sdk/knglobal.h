@@ -137,6 +137,12 @@ public:
     void copyText(const QString &content);
 
     /*!
+     * \brief Get the current clipboard holding text.
+     * \return The text in the clipboard.
+     */
+    QString clipboardText() const;
+
+    /*!
      * \brief Get the default font for all the text editors.
      * \return The text editor font.
      */

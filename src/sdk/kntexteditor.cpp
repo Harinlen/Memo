@@ -225,8 +225,6 @@ KNTextEditor::KNTextEditor(const QString &titleName,
         //Configure the editor based on global settings.
         setSymbolDisplayMode(knGlobal->symbolDisplayMode());
         onWrapModeChange(knGlobal->isWrap());
-        setTabStopDistance(knGlobal->tabSpacing() *
-                           fontMetrics().averageCharWidth());
         onEditorFontChanged();
         onResultDisplayChange(knGlobal->isSearchResultShown());
         onAlignLeftChange(knGlobal->isAlignLeft());
@@ -756,7 +754,8 @@ void KNTextEditor::keyPressEvent(QKeyEvent *event)
                 if(m_verticalSelect)
                 {
                     //Loop and find the cursor number.
-                    const int insBlock = tc.blockNumber();
+                    const int insBlock = tc.blockNumber(),
+                            tabSpacing = knGlobal->tabSpacing();
                     int insTextPos = qMin(m_vStartSpacePos, m_vEndSpacePos),
                             currentId = -1;
                     //Insert the for each line.
@@ -769,15 +768,22 @@ void KNTextEditor::keyPressEvent(QKeyEvent *event)
                         {
                             cursorTextPos = cc.selectionStart() - cc.block().position();
                         }
+                        //Convert the cursor text pos into space position.
+                        cursorTextPos = spacePosition(cc.block(), cursorTextPos, tabSpacing);
                         //Check the row selection.
                         if(cursorTextPos < insTextPos)
                         {
                             //Fill the space to the block
                             patchedText.prepend(QString(insTextPos - cursorTextPos, ' '));
+                            cc.insertText(patchedText);
+                            cc.movePosition(QTextCursor::EndOfBlock, QTextCursor::MoveAnchor);
                         }
-                        //Check the text cursor position.
-                        cc.insertText(patchedText);
-                        cc.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, patchedText.size());
+                        else
+                        {
+                            //Check the text cursor position.
+                            cc.insertText(patchedText);
+                            cc.movePosition(QTextCursor::NextCharacter, QTextCursor::MoveAnchor, patchedText.size());
+                        }
                         m_extraCursors.replace(i, cc);
                         //Check the cc position.
                         if(cc.blockNumber() == insBlock)
@@ -826,13 +832,12 @@ void KNTextEditor::mousePressEvent(QMouseEvent *event)
     //Check the mouse event.
     if(event->button() == Qt::LeftButton)
     {
-//        if(m_columnBlockNumber != -1)
-//        {
-//            //Clear the result.
-//            clearColumnCursor();
-//            //Update viewport.
-//            viewport()->update();
-//        }
+        //Check the event modifier.
+        if(event->modifiers() == Qt::NoModifier)
+        {
+            //Clear the cursor.
+            clearExtraCursor();
+        }
     }
     //Do the original event.
     QPlainTextEdit::mousePressEvent(event);
@@ -1093,6 +1098,9 @@ void KNTextEditor::onEditorFontChanged()
 {
     //Reset the font from the global.
     setFont(knGlobal->editorDefaultFont());
+    //Update the tab stop distance ASAP.
+    setTabStopDistance(knGlobal->tabSpacing() *
+                       fontMetrics().averageCharWidth());
 }
 
 void KNTextEditor::onWrapModeChange(bool wrap)
@@ -1776,7 +1784,53 @@ void KNTextEditor::paste()
     if(isExtraCursorEnabled())
     {
         //Do extra cursor paste here.
-        //!FIXME: Add codes here.
+        auto textLines = knGlobal->clipboardText().split('\n');
+        //Check the line length.
+        if(textLines.size() > m_extraCursors.size())
+        {
+            textLines = textLines.mid(0, textLines.size());
+        }
+        //Check whether the text is in vertical mode.
+        if(m_verticalSelect)
+        {
+            //Check whether the text lines are all the same.
+            int initLength = textLines.at(0).length();
+            bool keepVerticalMode = true;
+            for(int i=1; i<textLines.size(); ++i)
+            {
+                if(textLines.at(i).size() != initLength)
+                {
+                    keepVerticalMode = false;
+                    break;
+                }
+            }
+            //Check the vertical mode.
+            if(!keepVerticalMode)
+            {
+                m_verticalSelect = false;
+            }
+        }
+        //Sort the cursor.
+        std::sort(m_extraCursors.begin(), m_extraCursors.end(),
+                  [=](const QTextCursor &a, const QTextCursor &b)
+        {
+            //Check the block number.
+            return a.blockNumber() < b.blockNumber();
+        });
+        //Now insert the content.
+        int textLineNum = 0;
+        for(int i=0; i<m_extraCursors.size(); ++i)
+        {
+            auto cc = m_extraCursors.at(i);
+            //Insert the text to the cursor.
+            cc.insertText(textLines.at(textLineNum));
+            cc.setPosition(cc.selectionEnd());
+            m_extraCursors.replace(i, cc);
+            //Move the text line number to the next one.
+            textLineNum = ((textLineNum + 1) == textLines.size()) ? 0 : (textLineNum + 1);
+        }
+        //Update the extra cursors.
+        updateExtraSelections();
         return;
     }
     //Do original paste.
