@@ -31,7 +31,7 @@
 #include "kntextblockdata.h"
 #include "knglobal.h"
 #include "kntexteditorpanel.h"
-#include "knsyntaxhighlighter.h"
+#include "kncodesyntaxhighlighter.h"
 #include "knuimanager.h"
 #include "kndocumentlayout.h"
 
@@ -210,6 +210,7 @@ KNTextEditor::KNTextEditor(const QString &titleName,
     m_filePath(QString()),
     m_codecName(codec.toLatin1()),
     m_panel(new KNTextEditorPanel(this)),
+    m_highlighter(nullptr),
     m_editorOptions(HighlightCursor | CursorDisplay | LineNumberDisplay)
 {
     //Set properties.
@@ -1481,6 +1482,15 @@ void KNTextEditor::updateExtraSelections()
 
 void KNTextEditor::updateHighlighter(KNSyntaxHighlighter *highlighter)
 {
+    //Check the previous highlighter.
+    if(m_highlighter)
+    {
+        m_highlighter->setDocument(nullptr);
+        //Delete the highlighter.
+        m_highlighter->deleteLater();
+        //Reset the pointer.
+        m_highlighter = nullptr;
+    }
     //Check whether the highlighter is set.
     if(highlighter)
     {
@@ -1489,14 +1499,23 @@ void KNTextEditor::updateHighlighter(KNSyntaxHighlighter *highlighter)
     else
     {
         //Set the new highlighter.
-        m_highlighter = KNSyntaxHighlighter::get(m_filePath);
+        m_highlighter = KNCodeSyntaxHighlighter::get(m_filePath);
     }
-    //Update the panel based on the highlighter.
-    m_panel->setShowFold(m_highlighter->hasCodeLevel());
-    onBlockCountChanged(document()->blockCount());
-    //Configure the highlighter.
-    m_highlighter->setDocument(document());
-    m_highlighter->rehighlight();
+    //Check whether the highlighter is null.
+    if(m_highlighter)
+    {
+        //Update the panel based on the highlighter.
+        m_panel->setShowFold(m_highlighter->hasCodeLevel());
+        onBlockCountChanged(document()->blockCount());
+        //Configure the highlighter.
+        m_highlighter->setDocument(document());
+        m_highlighter->rehighlight();
+    }
+    else
+    {
+        //Hide the code level.
+        m_panel->setShowFold(false);
+    }
 }
 
 int KNTextEditor::spacePosition(const QTextBlock &block, int textPos,
@@ -1523,6 +1542,11 @@ int KNTextEditor::spacePosition(const QTextBlock &block, int textPos,
 int KNTextEditor::textPosition(const QTextBlock &block, int spacePos,
                                int tabSpacing)
 {
+    //For empty checking.
+    if(spacePos == 0)
+    {
+        return 0;
+    }
     //Loop and reduce the space pos, until it down to 0, then that is the space
     //pos.
     QString &&blockText = block.text();

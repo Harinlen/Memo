@@ -219,7 +219,14 @@ public:
      */
     void setHighlightCursor(bool yes);
 
+    /*!
+     * \brief Move the current text block to one block previous.
+     */
     void moveCurrentBlockUp();
+
+    /*!
+     * \brief Move the current text block to one block next.
+     */
     void moveCurrentBlockDown();
 
 signals:

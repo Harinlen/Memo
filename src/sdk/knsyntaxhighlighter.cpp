@@ -19,12 +19,6 @@ KNSyntaxHighlighter::KNSyntaxHighlighter(QObject *parent) :
 {
 }
 
-KNSyntaxHighlighter *KNSyntaxHighlighter::get(const QString &filePath)
-{
-    //Based on the language suffix.
-    return new KNSyntaxHighlighter();
-}
-
 bool KNSyntaxHighlighter::hasCodeLevel() const
 {
     return false;

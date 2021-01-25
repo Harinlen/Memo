@@ -30,5 +30,9 @@
         <file>icons/expand_all.png</file>
         <file>icons/fold_all.png</file>
         <file>icons/select_current_file.png</file>
+        <file>syntax/cpp.xml</file>
+        <file>syntax/doxygen.xml</file>
+        <file>syntax/gcc.xml</file>
+        <file>syntax/isocpp.xml</file>
     </qresource>
 </RCC>

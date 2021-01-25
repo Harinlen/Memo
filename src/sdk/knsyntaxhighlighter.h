@@ -34,13 +34,6 @@ public:
     explicit KNSyntaxHighlighter(QObject *parent = nullptr);
 
     /*!
-     * \brief Get the highlighter based on the suffix.
-     * \param filePath The file path for guessing the highlighter.
-     * \return The syntax highlighter.
-     */
-    static KNSyntaxHighlighter *get(const QString &filePath);
-
-    /*!
      * \brief Check whether the highlighter supports for code level.
      * \return The code level.
      */

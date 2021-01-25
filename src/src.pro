@@ -21,7 +21,8 @@ QT += \
     xml \
     network \
     printsupport \
-    concurrent
+    concurrent \
+    xml
 
 greaterThan(QT_MAJOR_VERSION, 5): QT += core5compat
 
@@ -88,6 +89,7 @@ HEADERS += \
     sdk/knclipboardhistory.h \
     sdk/kncodecdialog.h \
     sdk/kncodecmenu.h \
+    sdk/kncodesyntaxhighlighter.h \
     sdk/knconfigure.h \
     sdk/knconfiguremanager.h \
     sdk/kndocumentlayout.h \
@@ -144,6 +146,7 @@ SOURCES += \
     sdk/knclipboardhistory.cpp \
     sdk/kncodecdialog.cpp \
     sdk/kncodecmenu.cpp \
+    sdk/kncodesyntaxhighlighter.cpp \
     sdk/knconfigure.cpp \
     sdk/knconfiguremanager.cpp \
     sdk/kndocumentlayout.cpp \
