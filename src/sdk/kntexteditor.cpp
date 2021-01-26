@@ -1220,25 +1220,22 @@ void KNTextEditor::quickSearch(const QString &keywords, Qt::CaseSensitivity cs,
         m_quickSearchNext.reset(new KNTextSearcher);
         m_quickSearchPrev.reset(new KNTextSearcher);
         //Start searching.
-#if QT_VERSION_MAJOR > 5
         m_futureNext = QtConcurrent::run(
+            #if QT_VERSION_MAJOR > 5
                     &KNTextSearcher::search, m_quickSearchNext.data(),
-                    firstVisibleBlock(), m_quickSearchKeyword,
-                    KNTextSearcher::SearchOption(-1, true, true, m_quickSearchCode, m_quickSearchSense));
-        m_futurePrev = QtConcurrent::run(
-                    &KNTextSearcher::search, m_quickSearchPrev.data(),
-                    firstVisibleBlock(), m_quickSearchKeyword,
-                    KNTextSearcher::SearchOption(-1, true, false, m_quickSearchCode, m_quickSearchSense));
-#else
-        m_futureNext = QtConcurrent::run(
+            #else
                     m_quickSearchNext.data(), &KNTextSearcher::search,
+            #endif
                     firstVisibleBlock(), m_quickSearchKeyword,
                     KNTextSearcher::SearchOption(-1, true, true, m_quickSearchCode, m_quickSearchSense));
         m_futurePrev = QtConcurrent::run(
+            #if QT_VERSION_MAJOR > 5
+                    &KNTextSearcher::search, m_quickSearchPrev.data(),
+            #else
                     m_quickSearchPrev.data(), &KNTextSearcher::search,
+            #endif
                     firstVisibleBlock(), m_quickSearchKeyword,
                     KNTextSearcher::SearchOption(-1, true, false, m_quickSearchCode, m_quickSearchSense));
-#endif
         //Move to next.
         quickSearchNext(position);
     }

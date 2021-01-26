@@ -19,7 +19,16 @@ class KNCodeSyntaxHighlighter : public KNSyntaxHighlighter
 {
     Q_OBJECT
 public:
-    explicit KNCodeSyntaxHighlighter(QObject *parent = nullptr);
+    struct SyntaxExt
+    {
+        const QString name;
+        const int priority;
+        SyntaxExt(const QString &n, int p) :
+            name(n), priority(p) {}
+    };
+
+    explicit KNCodeSyntaxHighlighter(const QString &syntaxName,
+                                     QObject *parent = nullptr);
 
     /*!
      * \brief Get the highlighter based on the suffix.
@@ -28,14 +37,18 @@ public:
      */
     static KNSyntaxHighlighter *get(const QString &filePath);
 
+    void loadRules(const QString &syntaxName);
+
     bool hasCodeLevel() const override;
 
 signals:
 
 private:
-    static QHash<QString, QString> syntaxNames;
+    static QHash<QString, QString> extMap;
+    static QHash<QString, QString> namePathMap;
     static bool syntaxLoaded;
-
+    static void loadDir(const QString &dirPath, QHash<QString, int> &priorityMap);
+    static void loadXml(const QString &xmlPath, QHash<QString, int> &priorityMap);
 };
 
 #endif // KNCODESYNTAXHIGHLIGHTER_H

@@ -26,8 +26,8 @@ QT += \
 
 greaterThan(QT_MAJOR_VERSION, 5): QT += core5compat
 
-# Enabled C++ 17 configures.
-CONFIG += c++17
+# Enabled C++ 11 configures.
+CONFIG += c++11
 
 # Add translation paths for Qt Linguist to generate translation files.
 TRANSLATIONS += \
