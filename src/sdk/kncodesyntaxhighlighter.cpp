@@ -13,6 +13,8 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDomDocument>
+#include <QTextDocument>
+#include <QXmlStreamReader>
 
 #include "kncodesyntaxhighlighter.h"
 
@@ -60,21 +62,50 @@ void KNCodeSyntaxHighlighter::loadRules(const QString &syntaxName)
     {
         return;
     }
-    QDomDocument syntaxDoc;
-    if(!syntaxDoc.setContent(&ruleFile))
+//    QDomDocument syntaxDoc;
+//    if(!syntaxDoc.setContent(&ruleFile))
+//    {
+//        ruleFile.close();
+//        return;
+//    }
+    QHash<QString, QString> entity;
+    QXmlStreamReader reader(&ruleFile);
+    reader.readNext();
+    do
     {
-        ruleFile.close();
-        return;
+        int type = reader.tokenType();
+        switch(type)
+        {
+        case QXmlStreamReader::DTD:
+        {
+            //Build the internal entity.
+            auto ent = reader.entityDeclarations();
+            QTextDocument doc;
+            for(auto i=0; i<ent.size(); ++i)
+            {
+                doc.setHtml(ent.at(i).value().toString());
+                entity.insert(ent.at(i).name().toString(),
+                              doc.toPlainText());
+                qDebug()<<doc.toPlainText();
+            }
+            break;
+        }
+//        default:
+//            qDebug()<<type<<reader.text();
+        }
+        //Skip to next element.
+        reader.readNext();
     }
+    while(reader.tokenType() > QXmlStreamReader::Invalid);
     ruleFile.close();
     //Parse the syntax file.
-    auto nodes = syntaxDoc.childNodes();
-    auto dtype = syntaxDoc.doctype();
-    auto nots = dtype.entities();
-    for(int i=0; i<nots.size(); ++i)
-    {
-        qDebug()<<nots.item(i).nodeType();
-    }
+//    auto nodes = syntaxDoc.childNodes();
+//    auto dtype = syntaxDoc.doctype();
+//    auto nots = dtype.entities();
+//    for(int i=0; i<nots.size(); ++i)
+//    {
+//        qDebug()<<nots.item(i).nodeType();
+//    }
 }
 
 bool KNCodeSyntaxHighlighter::hasCodeLevel() const
