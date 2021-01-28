@@ -13,6 +13,8 @@
 #ifndef KNCODESYNTAXHIGHLIGHTER_H
 #define KNCODESYNTAXHIGHLIGHTER_H
 
+#include <QDomElement>
+
 #include "knsyntaxhighlighter.h"
 
 class KNCodeSyntaxHighlighter : public KNSyntaxHighlighter
@@ -44,6 +46,8 @@ public:
 signals:
 
 private:
+    void parseLanguageNode(const QDomElement &lan);
+    void parseHighlight(const QDomElement &highlights);
     static QHash<QString, QString> extMap;
     static QHash<QString, QString> namePathMap;
     static bool syntaxLoaded;

@@ -62,55 +62,134 @@ void KNCodeSyntaxHighlighter::loadRules(const QString &syntaxName)
     {
         return;
     }
-//    QDomDocument syntaxDoc;
-//    if(!syntaxDoc.setContent(&ruleFile))
-//    {
-//        ruleFile.close();
-//        return;
-//    }
     QHash<QString, QString> entity;
-    QXmlStreamReader reader(&ruleFile);
-    reader.readNext();
-    do
     {
-        int type = reader.tokenType();
-        switch(type)
-        {
-        case QXmlStreamReader::DTD:
-        {
-            //Build the internal entity.
-            auto ent = reader.entityDeclarations();
-            QTextDocument doc;
-            for(auto i=0; i<ent.size(); ++i)
-            {
-                doc.setHtml(ent.at(i).value().toString());
-                entity.insert(ent.at(i).name().toString(),
-                              doc.toPlainText());
-                qDebug()<<doc.toPlainText();
-            }
-            break;
-        }
-//        default:
-//            qDebug()<<type<<reader.text();
-        }
-        //Skip to next element.
+        QXmlStreamReader reader(&ruleFile);
         reader.readNext();
+        do
+        {
+            int type = reader.tokenType();
+            switch(type)
+            {
+            case QXmlStreamReader::DTD:
+            {
+                //Build the internal entity.
+                auto ent = reader.entityDeclarations();
+                QTextDocument doc;
+                for(auto i=0; i<ent.size(); ++i)
+                {
+                    doc.setHtml(ent.at(i).value().toString());
+                    entity.insert(ent.at(i).name().toString(),
+                                  doc.toPlainText());
+                }
+                break;
+            }
+            default:
+                break;
+            }
+            if(!entity.isEmpty())
+            {
+                break;
+            }
+            //Skip to next element.
+            reader.readNext();
+        }
+        while(reader.tokenType() > QXmlStreamReader::Invalid);
     }
-    while(reader.tokenType() > QXmlStreamReader::Invalid);
+    //Now reset the file position.
+    ruleFile.seek(0);
+    //Construct the dom document.
+    QDomDocument syntaxDoc;
+    if(!syntaxDoc.setContent(&ruleFile))
+    {
+        ruleFile.close();
+        return;
+    }
     ruleFile.close();
     //Parse the syntax file.
-//    auto nodes = syntaxDoc.childNodes();
-//    auto dtype = syntaxDoc.doctype();
-//    auto nots = dtype.entities();
-//    for(int i=0; i<nots.size(); ++i)
-//    {
-//        qDebug()<<nots.item(i).nodeType();
-//    }
+    auto nodes = syntaxDoc.childNodes();
+    for(int i=0; i<nodes.size(); ++i)
+    {
+        //Check the name of the nodes.
+        if("language" == nodes.item(i).nodeName())
+        {
+            //Parse the language node.
+            parseLanguageNode(nodes.item(i).toElement());
+            break;
+        }
+    }
 }
 
 bool KNCodeSyntaxHighlighter::hasCodeLevel() const
 {
     return true;
+}
+
+void KNCodeSyntaxHighlighter::parseLanguageNode(const QDomElement &lan)
+{
+    //Parse the internal nodes.
+    auto categoryList = lan.childNodes();
+    for(int i=0; i<categoryList.size(); ++i)
+    {
+        //Now check each element.
+        auto node = categoryList.at(i);
+        auto nodeName = node.nodeName();
+        if(nodeName == "highlighting")
+        {
+            //Update the highlighting rules.
+            parseHighlight(node.toElement());
+        }
+        else if(nodeName == "general")
+        {
+            //Update the general rules.
+            ;
+        }
+    }
+}
+
+void KNCodeSyntaxHighlighter::parseHighlight(const QDomElement &highlights)
+{
+    //Check for all the highlight info.
+    auto parts = highlights.childNodes();
+    QHash<QString, QString> lists;
+    for(int i=0; i<parts.size(); ++i)
+    {
+        //Check the part type.
+        auto node = parts.at(i);
+        auto nodeName = node.nodeName();
+        if(nodeName == "list")
+        {
+            auto element = node.toElement();
+            //Parse the list.
+            QString listName = element.attribute("name");
+            //Parse the internal items.
+            auto listItems = element.childNodes();
+            QStringList listContents;
+            listContents.reserve(listItems.size());
+            for(int j=0; j<listItems.size(); ++j)
+            {
+                //Append the internal data.
+                if(QDomNode::ElementNode == listItems.at(j).nodeType())
+                {
+                    //Extract its internal content.
+                    listContents.append(listItems.at(j).toElement().text());
+                }
+            }
+            //Insert the list data to lists.
+            lists.insert(listName,
+                         QString("\\b(%1)\\b").arg(listContents.join('|')));
+        }
+        else if(nodeName == "contexts")
+        {
+            //Parse the contexts.
+            ;
+        }
+        else if(nodeName == "itemDatas")
+        {
+            //Parse the item datas.
+            ;
+        }
+    }
 }
 
 void KNCodeSyntaxHighlighter::loadDir(const QString &dirPath, QHash<QString, int> &priorityMap)
